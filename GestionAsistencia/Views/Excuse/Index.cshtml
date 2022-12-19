@@ -1,0 +1,651 @@
+﻿@using Common.Utils.Enums
+@using Microsoft.AspNetCore.Identity
+@using static Common.Utils.Constant.Const
+
+@{
+    var idTypeUser = User.Claims.FirstOrDefault(x => x.Type == TypeClaims.IdTypeUser).Value;
+    bool isInstructor = idTypeUser == Convert.ToInt32(Enums.TypeUser.Instructor).ToString();
+}
+<input id="txtValorEstudiante" value=@isInstructor.ToString() hidden />
+
+@if (!isInstructor)
+{
+
+    <div class="row">
+        <div class="col-md-6">
+            <h1>Listado de Excusas</h1>
+        </div>
+
+        <div class="col-md-6">
+            <button class="btn btn-primary buttonTitle" onclick="nuevaExcusa()">
+                <i class="fas fa-exclamation-circle"></i>
+                Nueva Excusa
+            </button>
+        </div>
+    </div>
+
+    <hr />
+    <div class="row">
+        <div class="col-md-12">
+            <table id="tblExcusas" class="table " style="width:100% !important">
+                <thead class="table-sena">
+                    <tr>
+                        <th scope="col">Fecha Excusa</th>
+                        <th scope="col">Código Ficha</th>
+                        <th scope="col">Clase</th>
+                        <th scope="col">Instructor</th>
+                        <th scope="col">Opciones</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpoExcusas">
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+}
+else
+{
+    @*instrucotr*@
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <h1>Listado de Excusas</h1>
+            </div>
+        </div>
+        <hr />
+        <partial name="_FechaInicioFechaFin" />
+        <div class="row">
+            <div class="col-md-10 form-group">
+                <label class="control-label"> Ficha </label>
+                <select class="form-control" id="cmbFichasExcusas" onchange="selectFichaExcusa()" required>
+                </select>
+            </div>
+            <div class="col-md-2 form-group p-2">
+                <button type="button" class="btn btn-primary buttonTitle" onclick="consultarExcusas()">
+                    <i class="fas fa-search"></i>
+                    Buscar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+    <div class="row">
+        <div class="col-md-12">
+            <table id="tblExcusas" class="table " style="width:100% !important">
+                <thead class="table-sena">
+                    <tr>
+                        <th scope="col">Fecha Excusa</th>
+                        <th scope="col">Código Ficha</th>
+                        <th scope="col">Clase</th>
+                        <th scope="col">Aprendiz</th>
+                        <th scope="col">Instructor</th>
+                        <th scope="col">Opciones</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpoExcusas">
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+}
+
+
+
+
+@*modla Nuevo Ficha*@
+<div class="modal fade" id="modalExcusa" tabindex="1" role="dialog" aria-labelledby="modalExcusaLabel" aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="idTituloModalExcusa">Crear Excusa</h5>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <partial name="_FichasClass" />
+                    <div class="row">
+
+                        <div class="col-md-6 form-group">
+                            <label for="recipient-name" class="col-form-label">Fecha Inasistencia</label>
+                            <input type="date"
+                                   class="form-control"
+                                   id="txtDateInasistencia"
+                                   placeholder="Fecha fin">
+                        </div>
+
+                        <div class="col-md-6 form-group">
+                            <label for="recipient-name" class="col-form-label">Evidencia</label>
+                            <input type="file"
+                                   class="form-control"
+                                   accept="image/*"
+                                   id="fileEvidencia">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 form-group">
+                            <label for="recipient-name" class="col-form-label">Descripción</label>
+                            <textarea type="text"
+                                      class="form-control"
+                                      id="txtDescription"
+                                      required
+                                      placeholder="Breve comentario">
+                               </textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal" onclick="limpiarForm()">
+                    <i class="fas fa-window-close"></i>
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-success" onclick="guardarExcusa()">
+                    <i class="far fa-save"></i>
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@*modla Detalle Ficha*@
+<div class="modal fade" id="modalExcusaDetalle" tabindex="1" role="dialog" aria-labelledby="modalExcusaLabel" aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="idTituloModalExcusa">Detalle Excusa</h5>
+            </div>
+            <div class="modal-body">
+
+
+
+                <div class="row">
+
+                    <div class="row">
+                        <div class="col-md-2">
+                            <label for="recipient-name" class="col-form-label">Ficha:</label>
+                        </div>
+                        <div class="col-md-10">
+                            <input type="text"
+                                   class="form-control"
+                                   id="txtDetalleFicha"
+                                   readonly>
+                        </div>
+                    </div>
+
+
+                    <div class="row">
+                        <div class="col-md-2">
+                            <label for="recipient-name" class="col-form-label">Clase:</label>
+                        </div>
+                        <div class="col-md-10">
+                            <input type="text"
+                                   class="form-control"
+                                   id="txtDateleClase"
+                                   readonly>
+                        </div>
+
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2">
+                            <label for="recipient-name" class="col-form-label">Fecha Ina:</label>
+                        </div>
+                        <div class="col-md-10">
+                            <input type="text"
+                                   class="form-control"
+                                   id="txtDetalleDateInasistencia"
+                                   readonly>
+                        </div>
+
+
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-2">
+                            <label for="recipient-name" class="col-form-label">Descripción:</label>
+                        </div>
+                        <div class="col-md-10">
+                            <textarea type="text"
+                                      class="form-control"
+                                      id="txtDetalleDescription"
+                                      readonly>
+                               </textarea>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-2">
+                            <label for="recipient-name" class="col-form-label">Evidencia:</label>
+                        </div>
+                        <div class="col-md-10" style="margin-top:10px!important;">
+                            <a href="#" onclick="descargarArchivo()" style="text-decoration:none;">
+
+                                <i class="fas fa-download"></i>
+                                Descargar Archivo
+                            </a>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal" onclick="limpiarForm()">
+                    <i class="fas fa-window-close"></i>
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts{
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+<script type="text/javascript" charset="utf-8">
+
+    var listaExcuses = [];
+    let idExcuse = '';
+    let nombreArchivo='';
+    let isInstructor=false;
+
+
+    $(document).ready(function () {
+
+        let valor=$("#txtValorEstudiante").val();
+        if(valor=="True"){
+            isInstructor=true;
+            getAllFichas();
+        }else{
+            getAllExcusas();
+            getFichasClassByUser();
+            var myTooltipEl = document.getElementById('cmbFichas')
+            var tooltip = new bootstrap.Tooltip(myTooltipEl)
+        }
+        
+        llenarGridDataTable('tblExcusas');
+    });
+
+    function getAllExcusas() {
+        modalProcesando(true, 'Cargando Excusas');
+
+        $.ajax({
+            url: '@Url.Action("GetAllExcuses", "Excuse")',
+            method: 'GET',
+            dataType: "json",
+            success: function (data) {
+                modalProcesando(false);
+                if (data.isSuccess) {
+                    listaExcuses = data.result;
+                    console.log(listaExcuses);
+                    loadGrid(listaExcuses);
+                } else {
+                    Swal.fire(
+                        'Opps!',
+                        data.message,
+                        'error');
+                }
+            },
+            error: function (xhr, textStatus, errorThrown) {
+                modalProcesando(false);
+                console.error(xhr, textStatus, errorThrown);
+                toastMessage('error', 'Hubo un error al obtener la información, por favor intentarlo nuevamente!');
+            }
+        });
+    }
+
+    function loadGrid(data) {
+        //llenar registro
+        if ($.fn.dataTable.isDataTable('#tblExcusas')) {
+            var table = $('#tblExcusas').DataTable();
+            table.destroy();
+            cargarGridExcusas(data);
+            llenarGridDataTable('tblExcusas');
+        }
+        else {
+            cargarGridExcusas(data);
+            llenarGridDataTable('tblExcusas');
+        }
+    }
+
+    function cargarGridExcusas(data) {
+        $("#cuerpoExcusas").html("");
+
+        if(isInstructor){
+            for (var i = 0; i < data.length; i++) {
+                var tr = `
+                            <tr>
+                                 <th> `+ data[i].strExcuseDate + `</th>
+                                 <th>`+ data[i].ficha + `</th>
+                                 <th>`+ data[i].class + `</th>
+                                 <th> `+ data[i].fullNameUser + `</th>
+                                 <th> `+ data[i].nameTeacher + `</th>
+
+                             <td>
+                                    <button  class="btn btn-info" onclick="detalleExcusa(`+ data[i].idExcuse + `)"><i class="fas fa-user-edit"></i> Detalle</button>
+                              </td>
+                             </tr>
+                              `;
+                $("#cuerpoExcusas").append(tr);
+            }
+        }else{
+            //Aprendiz
+             for (var i = 0; i < data.length; i++) {
+                var tr = `
+                            <tr>
+                                 <th> `+ data[i].strExcuseDate + `</th>
+                                 <th>`+ data[i].ficha + `</th>
+                                 <th>`+ data[i].class + `</th>
+                                 <th> `+ data[i].nameTeacher + `</th>
+
+                             <td>
+                                        <button  class="btn btn-info" onclick="detalleExcusa(`+ data[i].idExcuse + `)"><i class="fas fa-user-edit"></i> Detalle</button>
+                                        <button class="btn btn-danger" onclick="eliminarExcusa(`+ data[i].idExcuse + `)"><i class="fas fa-trash-alt"></i> Eliminar</button>
+                              </td>
+                             </tr>
+                              `;
+                $("#cuerpoExcusas").append(tr);
+            }
+        }s
+    }
+
+    function nuevaExcusa() {
+        limpiarForm();
+        $('#idTituloModalExcusa').html("Crear Excusa");
+        const modal = new bootstrap.Modal('#modalExcusa', {
+            keyboard: true
+        });
+        modal.show();
+
+    }
+
+    function guardarExcusa() {
+        if (validarForm()) {
+
+            var formData = new FormData();
+            formData.append("IdFicha", idFicha);
+            formData.append("IdClass", idClass);
+            formData.append("Description", $("#txtDescription").val());
+            formData.append("ExcuseDate", $("#txtDateInasistencia").val());
+
+            var myfile= document.getElementById("fileEvidencia");
+            if (myfile.files.length > 0) {
+                var files = $("#fileEvidencia")[0].files;
+                formData.append("FileImage", files[0]);
+            }
+
+            console.log(formData);
+            if (idExcuse == '') {
+                modalProcesando(true, 'Guardando Excusa');
+                $.ajax({
+                    url: '@Url.Action("InsertExcuse", "Excuse")',
+                    method: 'POST',
+                    data:formData,
+                    dataType: "json",
+                    contentType: false,
+                    processData: false,
+                    success: function (data) {
+                        modalProcesando(false);
+                        console.log(data);
+                        if (data.isSuccess) {
+                            closeModal('modalExcusa');
+                            limpiarForm();
+                            toastMessage('success', data.message);
+                            setTimeout(function () {
+                                getAllExcusas();
+                            }, 500);
+                        } else {
+                            toastMessage('error', data.message);
+                        }
+                    },
+                    error: function (xhr, textStatus, errorThrown) {
+                        modalProcesando(false);
+                        //toastMessage('error', 'Hubo un error al guardar, por favor intentarlo nuevamente!');
+                        console.error(xhr, textStatus, errorThrown);
+                        if (xhr.status == 400) {
+                            Swal.fire(
+                                'Alerta!',
+                                xhr.responseJSON.message,
+                                'warning');
+                        } else {
+                            Swal.fire(
+                                'Opps!',
+                                xhr.responseJSON.message,
+                                'error');
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    function validarForm() {
+
+        if (idFicha == '') {
+            $("#cmbFichas").focus();
+            toastMessage('warning', 'La ficha es obligatoria');
+            return false;
+        }
+        if (idClass == '') {
+            $("#cmbClass").focus();
+            toastMessage('warning', 'La clase es obligatoria');
+            return false;
+        }
+
+        if ($("#txtDateInasistencia").val() == '') {
+            $("#txtDateInasistencia").focus();
+            toastMessage('warning', 'La fecha de la excusa es obligatoria.');
+            return false;
+        }
+
+        var myfile= document.getElementById("fileEvidencia");
+        if (myfile.files.length == 0) {
+              $("#fileEvidencia").focus();
+            toastMessage('warning', 'Es obligatorio subir una imagen de evidencia.');
+            return false;
+        }
+
+        if ($("#txtDescription").val() == '') {
+            $("#txtDescription").focus();
+            toastMessage('warning', 'La descripción es obligatoria.');
+            return false;
+        }
+
+
+        return true;
+    }
+
+    function limpiarForm() {
+        $("#txtDateInasistencia").val('');
+        $("#txtDescription").val('');
+        $("#fileEvidencia").val('');
+        //document.getElementById("imgEvidencia").value = "";
+        idFicha = '';
+        idClass = '';
+        idExcuse = '';
+        nombreArchivo='';
+        loadFichas(listFichas);
+        loadClass(listaClass);
+
+        $('#txtDetalleFicha').val('');
+        $('#txtDateleClase').val('');
+        $('#txtDetalleDateInasistencia').val('');
+        $('#txtDetalleDescription').val('');
+    }
+
+    function detalleExcusa (idExcuse) {
+        limpiarForm();
+        idExcuse=idExcuse;
+
+        let excuse=listaExcuses.find(x=>x.idExcuse==idExcuse);
+        $('#txtDetalleFicha').val(excuse.ficha);
+        $('#txtDateleClase').val(excuse.class);
+        $('#txtDetalleDateInasistencia').val(excuse.strExcuseDate);
+        $('#txtDetalleDescription').val(excuse.description);
+
+        nombreArchivo= excuse.urlImage;
+        $("#imgDetalle").attr("src", excuse.urlImage);
+
+        const modal = new bootstrap.Modal('#modalExcusaDetalle', {
+            keyboard: true
+        });
+        modal.show();
+    }
+
+    function eliminarExcusa(idExcusa) {
+            console.log(idFicha);
+            Swal.fire({
+                title: '¿Confirmar Eliminacion?',
+                text: "No podrás revertir esto.!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                cancelButtonText: 'Cancelar',
+                confirmButtonText: 'Si, Eliminar!',
+            }).then((result) => {
+                if (result.isConfirmed) {
+
+                    modalProcesando(true, 'Eliminando Ficha');
+                    //petición
+                    $.ajax({
+                        url: '@Url.Action("DeleteExcuse", "Excuse")',
+                        method: 'DELETE',
+                        data: {
+                            idExcuse: idExcusa
+                        },
+                        dataType: "json",
+                        success: function (data) {
+                            modalProcesando(false);
+                            console.log(data);
+                            if (data.isSuccess) {
+
+                                listaExcuses = listaExcuses.filter(x => x.idExcuse != idExcusa);
+                                cargarGridExcusas(listaExcuses);
+
+                                Swal.fire(
+                                    'Eliminado!',
+                                    data.message,
+                                    'success');
+                            } else {
+                                Swal.fire(
+                                    'Error!',
+                                    data.message,
+                                    'error');
+                            }
+                        },
+                        error: function (xhr, textStatus, errorThrown) {
+                            modalProcesando(false);
+                            console.error(xhr, textStatus, errorThrown);
+                        }
+                    });
+                }
+
+            });
+    }
+
+    function descargarArchivo(){
+        if(nombreArchivo=='' || nombreArchivo==null || nombreArchivo==undefined)
+        {
+            Swal.fire('Alerta!',
+                      "No hay archivo disponible",
+                      'warning');
+        }else{
+            window.location.href = "@Url.RouteUrl(new
+                                           { Controller = "Excuse", Action = "Download" })/?fileName="+nombreArchivo;
+
+        }
+    }
+
+    //Solo se ejecuta cuando el usuario es instructor
+    function getAllFichas() {
+        modalProcesando(true,'Cargando Fichas');
+        $.ajax({
+            url: '@Url.Action("GetAllFichas", "Ficha")',
+            method: 'GET',
+            dataType: "json",
+            success: function (data) {
+                modalProcesando(false);
+                if (data.isSuccess) {
+                    var list = transformarDataSelect2FichasCompleta(data.result);
+                    $('#cmbFichasExcusas').select2({
+                        width: 'resolve',
+                        placeholder: {
+                            id: '-1', // the value of the option
+                            text: 'Seleccionar una Ficha'
+                        },
+                        data: list
+                    });
+                    $('#cmbFichasExcusas').val(null).trigger('change');
+                } else {
+                    Swal.fire(
+                        'Opps!',
+                        data.message,
+                        'error');
+                }
+            },error: function (xhr, textStatus, errorThrown) {
+                modalProcesando(false);
+                console.error(xhr, textStatus, errorThrown);
+                toastMessage('error', 'Hubo un error al obtener la información, por favor intentarlo nuevamente!');
+            }
+        });
+    }
+    function selectFichaExcusa(){
+
+    }
+
+    function consultarExcusas(){
+        if(validateDate())
+        {
+            var combo = document.getElementById("cmbFichasExcusas");
+            if (combo.selectedIndex != -1) {
+                var selectedFicha = combo.options[combo.selectedIndex].value;
+               
+                 modalProcesando(true, 'Cargando Excusas');
+                 $.ajax({
+                     url: '@Url.Action("GetAllExcusesInstructor", "Excuse")',
+                     method: 'GET',
+                     dataType: "json",
+                     data:{
+                         IdFicha:selectedFicha,
+                         StartDate:$('#txtStartDate').val(),
+                         EndDate:$('#txtEndDate').val()
+                     },
+                     success: function (data) {
+                         modalProcesando(false);
+                         if (data.isSuccess) {
+                             listaExcuses = data.result;
+                             loadGrid(listaExcuses);
+                         } else {
+                             Swal.fire(
+                                 'Opps!',
+                                 data.message,
+                                 'error');
+                         }
+                    },error: function (xhr, textStatus, errorThrown) {
+                        modalProcesando(false);
+                        console.error(xhr, textStatus, errorThrown);
+                        toastMessage('error', 'Hubo un error al obtener la información, por favor intentarlo nuevamente!');
+                    }
+                });
+
+               
+            }else{
+                $("#cmbFichasExcusas").focus();
+                toastMessage('warning', 'La ficha es obligatoria para realizar la busqueda.');
+            }             
+        }
+    }
+
+
+</script>
+
+   }
+

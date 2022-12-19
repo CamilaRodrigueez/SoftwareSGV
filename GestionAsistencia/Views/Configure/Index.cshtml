@@ -1,0 +1,253 @@
+﻿@model Infraestructure.Entity.Model.UserEntity
+
+
+@{
+    ViewData["Title"] = "Configuracion";
+}
+
+
+<style>
+    .center {
+        /*  background: #ffff;*/
+        color: black;
+        margin: auto;
+        padding: auto;
+    }
+
+    .row {
+        margin: auto;
+    }
+
+    .contenedor {
+        /*background: aqua;*/
+        margin: auto;
+        width: 75%;
+        height: 75%;
+    }
+
+</style>
+<div class="content  p-5">
+
+
+    @*<div class="row">
+        <div class="col-md-12">
+            <h1 class="text-center text-uppercase">Mi Perfil</h1>
+        </div>
+    </div>
+    <hr class="bg-dark mt-3 " />*@
+
+    <div class="container contenedor">
+        <form>
+            <div class="card">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h1 class="text-center text-uppercase">Mi Perfil</h1>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>Nombre</label>
+                            <input class="form-control" value="@Model.Name" id="txtName" />
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>Apellido</label>
+                            <input class="form-control" value="@Model.LastName" id="txtLastName" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>Correo</label>
+                            <input class="form-control" value="@Model.Email" id="txtEmail" />
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>Telefono</label>
+                            <input class="form-control" value="@Model.Telefono" id="txtTelefono" />
+                        </div>
+                    </div>
+                    <div class="row" id="passwords">
+                        @*<div class="col-md-6 form-group">
+                            <label>Cambiar contraseña</label>
+                            <input class="form-control" value="c" type="password" />
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>Confirmar contraseña</label>
+                            <input class="form-control" value="`+ userSelect.password + `" type="password" />
+                        </div>*@
+                    </div>
+                </div>
+                <div class="card-footer" >
+                    
+                    <button class="btn btn-warning" id="btnEditar" name="editar" value="@Model.IdUser" onclick="editarInfo(@Model.IdUser)">
+                        <i class="fas fa-edit"></i>
+                        Editar
+                     </button>
+                    <button type="button" class="btn btn-danger" id="btnCancelar" onclick="readonlyForm()">
+                        <i class="fas fa-window-close"></i>
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-success" id="btnGuardar" value="@Model.IdUser" onclick="guardarInfo(@Model.IdUser)">
+                        <i class="far fa-save"></i>
+                        Guardar
+                    </button>
+
+                    @*<div class="col-auto" id="footer">
+                   
+                    </div>*@
+                    
+                </div>
+            </div>
+           
+         @*   <div class="row">
+                <div class="col-md-3 p-5 form-group">
+                    <button class="btn btn-warning" action="" name="editar" value="@Model.IdUser" onclick="editarInfo(@Model.IdUser)"> Editar</button>
+                </div>
+            </div>*@
+        </form>
+    </div>
+
+</div>
+
+@section Scripts{
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script type="text/javascript" charset="utf-8">
+        var User = [];
+        let idUser = '';
+        var div ='';
+        $(document).ready(function () {
+            getUser();
+        });
+
+        function getUser() {
+            //modalProcesando(true);
+            $.ajax({
+                url: '@Url.Action("GetUser", "Configure")',
+                method: 'GET',
+                dataType: "json",
+                success: function (data) {
+                    modalProcesando(false);
+                    console.log(data);
+                    if (data.isSuccess) {
+                        User = data.result;
+                        readonlyForm();
+                        console.log("Prueba consultar usuario logueado");
+                        console.log(User);
+                    } else {
+                        Swal.fire(
+                            'Opps!',
+                            data.message,
+                            'error');
+                    }
+                },
+                error: function (xhr, textStatus, errorThrown) {
+                    modalProcesando(false);
+                    console.error(xhr, textStatus, errorThrown);
+                }
+            });
+        }
+
+        function readonlyForm() {
+            $("#txtLastName").val(User.lastName);
+            $("#txtLastName").attr("readonly", "readonly");
+            $("#txtName").val(User.name);
+            $("#txtName").attr("readonly", "readonly");
+            $("#txtTelefono").val(User.telefono);
+            $("#txtTelefono").attr("readonly", "readonly");
+            $("#txtEmail").val(User.email);
+            $("#txtEmail").attr("readonly", "readonly");
+            $('#btnGuardar').prop('disabled', true);
+            $('#btnCancelar').prop('disabled', true);
+            var div = document.getElementById('passwords');
+            if (!div) {
+                alert("El elemento selecionado no existe");
+            } else {
+                $("#passwords").hide();  
+            }
+            $('#btnEditar').prop('disabled', false);
+            $('#btnEditar').show();
+            $('#btnGuardar').hide();
+            $('#btnCancelar').hide();
+        }
+       
+        function limpiarReadonlyForm() {
+            $("#txtLastName").val(User.lastName);
+            $("#txtLastName").removeAttr("readonly");
+            $("#txtName").val(User.name);
+            $("#txtName").removeAttr("readonly");
+            $("#txtTelefono").val(User.telefono);
+            $("#txtTelefono").removeAttr("readonly");
+            $('#btnGuardar').prop('disabled', false);
+            $('#btnCancelar').prop('disabled', false);
+            $('#btnGuardar').show();
+            $('#btnCancelar').show();
+
+        }
+       
+      function editarInfo(idUser) {
+           console.log(idUser);
+            let userSelect = User;
+            console.log("PruebaEditar");
+            console.log(userSelect);
+            $('#btnEditar').prop('disabled', true);
+            $('#btnEditar').hide();
+            $("#passwords").html("");
+            div = `<div class="col-md-6 form-group">
+                          <label>Cambiar contraseña</label>
+                           <input class="form-control" value="`+ userSelect.password + `" type="password" id="txtPassword" />
+                      </div>
+                      <div class="col-md-6 form-group">
+                          <label>Confirmar contraseña</label>
+                                  <input class="form-control" value="`+ userSelect.password + `" type="password" id="txtConfirmPassword" />
+                      </div>
+                        `;
+             $("#passwords").append(div);
+             $("#passwords").show();
+            limpiarReadonlyForm();
+            
+      }
+
+        function guardarInfo(idUser) {
+            let parametro = {
+                Name: $("#txtName").val(),
+                LastName: $("#txtLastName").val(),
+                Telefono: $("#txtTelefono").val(),
+                Password: $("#txtPassword").val(),
+                ConfirmPassword: $("#txtConfirmPassword").val(),
+                IdUser: idUser,
+                
+            };
+
+            $.ajax({
+                url: '@Url.Action("UpdatePersonalInformation", "User")',
+                method: 'PUT',
+                data: {
+                    updateUser: parametro,
+                },
+                dataType: "json",
+                success: function (data) {
+                    modalProcesando(false);
+                    if (data.isSuccess) {
+                        //closeModal('modalUsers');
+                        //limpiarForm();
+                        toastMessage('success', data.message);
+                        getUser();
+                    } else {
+                        toastMessage('error', data.message);
+                    }
+                },
+                error: function (xhr, textStatus, errorThrown) {
+                    modalProcesando(false);
+                    console.error(xhr, textStatus, errorThrown);
+                    swaMessage(xhr.status, xhr.responseJSON.message);
+                }
+            });
+        
+        }
+    </script>
+
+   }

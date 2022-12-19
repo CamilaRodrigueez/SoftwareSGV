@@ -1,0 +1,431 @@
+﻿@using Common.Utils.Enums
+@using static Common.Utils.Constant.Const
+@{
+    ViewData["Title"] = "Clases";
+
+    var idRols = User.Claims.FirstOrDefault(x => x.Type == TypeClaims.IdRol).Value;
+
+    bool isAdmin = idRols.Any(x => x.ToString() == Convert.ToInt32(Enums.RolUser.Administrador).ToString());
+}
+@if (isAdmin)
+{
+    <div class="row">
+        <div class="col-md-6">
+            <h1>Listado de Clases</h1>
+        </div>
+
+        <div class="col-md-6">
+            <button class="btn btn-primary buttonTitle" onclick="nuevaClase()">
+                <i class="fas fa-feather"></i>
+                Nueva Clase
+            </button>
+        </div>
+    </div>
+
+
+
+    <hr />
+
+    <div class="row">
+        <div class="col-md-12">
+            <table id="tblClases" class="table " style="width:100% !important">
+                <thead class="table-sena">
+                    <tr>
+                        <th scope="col">Nombre</th>
+                        <th scope="col">Opciones</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpoClases">
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+
+
+    @*modla Nueva Clase*@
+    <div class="modal fade" id="modalClase" tabindex="1" role="dialog" aria-labelledby="modalClaseLabel" aria-hidden="true">
+
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="idTituloModalClase">Crear Clase</h5>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="row">
+                            <div class="row">
+                                <div class="col-md-12 form-group">
+                                    <label for="recipient-name" class="col-form-label">Ficha</label>
+                                    <select class="form-control" id="cmbFichas" style="width: 100%;"></select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12 form-group">
+                                    <label for="recipient-name" class="col-form-label">Nombre Clase</label>
+                                    <input type="text"
+                                       class="form-control"
+                                       id="txtNameClase"
+                                       placeholder="Nombre Clase"
+                                       required
+                                       maxlength="100">
+                                </div>
+                            </div>
+
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                        <i class="fas fa-window-close"></i>
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="guardarClase()">
+                        <i class="far fa-save"></i>
+                        Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @section Scripts{
+    @{
+            await Html.RenderPartialAsync("_ValidationScriptsPartial");
+        }
+        <script type="text/javascript" charset="utf-8">
+
+            var listaFichas = [];
+            var listaClass = [];
+            let idFichas = '';
+            let idClass = '';
+
+            $(document).ready(function () {
+                getAllClass();
+
+                setTimeout(function () {
+                    getAllFichas();
+                }, 500);
+
+
+                var myTooltipEl = document.getElementById('cmbFichas')
+                var tooltip = new bootstrap.Tooltip(myTooltipEl)
+            });
+
+
+
+            function getAllClass() {
+                modalProcesando(true, 'Cargando Clases');
+                $.ajax({
+                    url: '@Url.Action("GetAllClass", "Class")',
+                    method: 'GET',
+                    dataType: "json",
+                    success: function (data) {
+                        modalProcesando(false);
+                        if (data.isSuccess) {
+                            listaClass = data.result;
+                            loadGrid(listaClass);
+                        } else {
+                            Swal.fire(
+                                'Opps!',
+                                data.message,
+                                'error');
+                        }
+                    },
+                    error: function (xhr, textStatus, errorThrown) {
+                        modalProcesando(false);
+                        console.error(xhr, textStatus, errorThrown);
+                    }
+                });
+            }
+
+            function getAllFichas() {
+                //modalProcesando(true, 'Cargando Fichas');
+                $.ajax({
+                    url: '@Url.Action("GetAllFichas", "Ficha")',
+                    method: 'GET',
+                    dataType: "json",
+                    success: function (data) {
+                        modalProcesando(false);
+                        if (data.isSuccess) {
+                            listaFichas = data.result;
+                        } else {
+                            Swal.fire(
+                                'Opps!',
+                                data.message,
+                                'error');
+                        }
+                    },
+                    error: function (xhr, textStatus, errorThrown) {
+                        modalProcesando(false);
+                        toastMessage('error', 'Hubo un error al cargar fichas, por favor intentarlo nuevamente!');
+                        console.error(xhr, textStatus, errorThrown);
+                    }
+                });
+            }
+
+            function loadGrid(data) {
+                //llenar registro
+                if ($.fn.dataTable.isDataTable('#tblClases')) {
+                    var table = $('#tblClases').DataTable();
+                    table.destroy();
+                    cargarGridClases(data);
+                    llenarGridDataTable('tblClases');
+                }
+                else {
+                    cargarGridClases(data);
+                    llenarGridDataTable('tblClases');
+                }
+            }
+
+            function cargarGridClases(data) {
+                $("#cuerpoClases").html("");
+
+                for (var i = 0; i < data.length; i++) {
+                    var tr = `
+                                <tr>
+                                    <th>`+ data[i].class + `</th>
+                                <td>
+                                    <button  class="btn btn-warning" onclick="editarClase(`+ data[i].idClass + `)"><i class="fas fa-edit"></i> Editar</button>
+                                    <button class="btn btn-danger" onclick="eliminarClase(`+ data[i].idClass + `)"><i class="fas fa-trash-alt"></i> Eliminar</button>
+                                </td>
+                                </tr>
+                                                      `;
+                    $("#cuerpoClases").append(tr);
+                }
+            }
+
+
+            function nuevaClase() {
+                limpiarForm();
+
+                var list = transformarDataSelect2Fichas(listaFichas);
+
+                $('#cmbFichas').select2({
+                    width: 'resolve',
+                    placeholder: 'Selección de Fichas',
+                    dropdownParent: $('#modalClase'),
+                    data: list,
+                    tokenSeparators: [',', ' '],
+                    multiple: true
+                });
+                var myTooltipEl = document.getElementById('cmbFichas')
+                var tooltip = new bootstrap.Tooltip(myTooltipEl)
+                $("#idTituloModalClase").html('Crear Clase');
+                const modal = new bootstrap.Modal('#modalClase', {
+                    keyboard: true
+                });
+                modal.show();
+
+            }
+
+
+            function guardarClase() {
+
+                //var result= $('#cmbFichas').find(':selected');
+                //console.log(result);
+
+                var fichasSelected = document.getElementById("cmbFichas").value;
+                if (fichasSelected != 0) {
+                    var selected = document.querySelectorAll('#cmbFichas option:checked');
+
+                    //obtener el valor del texto
+                    //var tecString = Array.from(selected).map(el => el.innerText);
+                    //var fichas = tecString.join(',');
+                    //console.log(fichas);
+
+                    //obtener el valor del id
+                    var valueString = Array.from(selected).map(el => el.attributes.value.value);
+                    idFichas = valueString.join(',');
+                }
+
+
+                if (validarForm()) {
+                    let parametro = {
+                        Class: $("#txtNameClase").val(),
+                        IdFichas: idFichas,
+                        IdClass: idClass
+                    };
+                    if (idClass == '') {
+                        modalProcesando(true, 'Guardando Clase');
+                        $.ajax({
+                            url: '@Url.Action("InsertClass", "Class")',
+                            method: 'POST',
+                            data: {
+                                classInsert: parametro,
+                            },
+                            dataType: "json",
+                            success: function (data) {
+                                modalProcesando(false);
+                                if (data.isSuccess) {
+                                    closeModal('modalClase');
+                                    limpiarForm();
+                                    toastMessage('success', data.message);
+                                    getAllClass();
+                                } else {
+                                    toastMessage('error', data.message);
+                                }
+                            },
+                            error: function (xhr, textStatus, errorThrown) {
+                                modalProcesando(false);
+                                console.error(xhr, textStatus, errorThrown);
+                                swaMessage(xhr.status, xhr.responseJSON.message);
+                            }
+                        });
+                    }
+                    else {
+                        modalProcesando(true, 'Editando Clase');
+                        $.ajax({
+                            url: '@Url.Action("UpdateClass", "Class")',
+                            method: 'PUT',
+                            data: {
+                                classUpdate: parametro,
+                            },
+                            dataType: "json",
+                            success: function (data) {
+                                modalProcesando(false);
+                                if (data.isSuccess) {
+                                    closeModal('modalClase');
+                                    limpiarForm();
+                                    toastMessage('success', data.message);
+                                    getAllClass();
+                                } else {
+                                    toastMessage('error', data.message);
+                                }
+                            },
+                            error: function (xhr, textStatus, errorThrown) {
+                                modalProcesando(false);
+                                console.error(xhr, textStatus, errorThrown);
+                                swaMessage(xhr.status, xhr.responseJSON.message);
+                            }
+                        });
+                    }
+                }
+            }
+
+            function validarForm() {
+                if (idFichas == '') {
+                    $("#cmbFichas").focus();
+                    toastMessage('warning', 'Debe seleccionar almenos una ficha.');
+                    return false;
+                }
+
+                if ($("#txtNameClase").val() == '') {
+                    $("#txtNameClase").focus();
+                    toastMessage('warning', 'El nombre de la Clase es obligatorio');
+                    return false;
+                }
+
+                return true;
+            }
+
+            function limpiarForm() {
+                //reinicializar el select
+                $('#cmbFichas').val(null).trigger('change');
+
+                $("#txtNameClase").val('');
+                idFichas = '';
+                idClass = '';
+            }
+
+            function editarClase(idClase) {
+                limpiarForm();
+                idClass = idClase;
+
+                let classSelect = listaClass.find(x => x.idClass == idClass);
+                var list = transformarDataSelect2Fichas(listaFichas);
+
+                $('#cmbFichas').select2({
+                    width: 'resolve',
+                    placeholder: 'Selección de Fichas',
+                    dropdownParent: $('#modalClase'),
+                    tokenSeparators: [',', ' '],
+                    multiple: true,
+                    data: list
+                });
+
+                //select data
+                $('#cmbFichas').val(classSelect.listIdFichas).trigger('change');
+                $("#txtNameClase").val(classSelect.class);
+
+                $("#idTituloModalClase").html('Editar Clase');
+                const modal = new bootstrap.Modal('#modalClase', {
+                    keyboard: true
+                });
+                modal.show();
+            }
+
+            function eliminarClase(idClase) {
+                Swal.fire({
+                    title: '¿Confirmar Eliminacion?',
+                    text: "No podrás revertir esto.!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonText: 'Si, Eliminar!',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+
+                        modalProcesando(true, 'Eliminando Clase');
+                        $.ajax({
+                            url: '@Url.Action("DeleteClass", "Class")',
+                            method: 'DELETE',
+                            data: {
+                                idClass: idClase,
+                            },
+                            dataType: "json",
+                            success: function (data) {
+                                modalProcesando(false);
+                                if (data.isSuccess) {
+                                    toastMessage('success', data.message);
+                                    getAllClass();
+                                } else {
+                                    toastMessage('error', data.message);
+                                }
+                            },
+                            error: function (xhr, textStatus, errorThrown) {
+                                modalProcesando(false);
+                                //toastMessage('error', 'Hubo un error al guardar, por favor intentarlo nuevamente!');
+                                console.error(xhr, textStatus, errorThrown);
+                                if (xhr.status == 400) {
+                                    Swal.fire(
+                                        'Alerta!',
+                                        xhr.responseJSON.message,
+                                        'warning');
+                                } else {
+                                    Swal.fire(
+                                        'Opps!',
+                                        xhr.responseJSON.message,
+                                        'error');
+                                }
+                            }
+                        });
+                    }
+
+                });
+
+
+
+            }
+        </script>
+
+   }
+}
+else
+{
+    @section Scripts{
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function () {
+            Swal.fire(
+                '¡Usuario no Autorizado!',
+                'No tiene suficientes privilegios para ver esta sección.',
+                'error');
+        });
+    </script>
+     }
+}
+
+
+

@@ -1,0 +1,440 @@
+﻿@using Common.Utils.Enums
+@using static Common.Utils.Constant.Const
+@{
+    ViewData["Title"] = "Fichas";
+
+    var idRols = User.Claims.FirstOrDefault(x => x.Type == TypeClaims.IdRol).Value;
+
+    bool isAdmin = idRols.Any(x => x.ToString() == Convert.ToInt32(Enums.RolUser.Administrador).ToString());
+}
+@if (isAdmin)
+{
+    <div class="row">
+        <div class="col-md-6">
+            <h1>Listado de Fichas</h1>
+        </div>
+
+        <div class="col-md-6">
+            <button class="btn btn-primary buttonTitle" onclick="nuevaFicha()">
+                <i class="fas fa-certificate"></i>
+                Nueva Ficha
+            </button>
+        </div>
+    </div>
+
+
+
+    <hr />
+
+    <div class="row">
+        <div class="col-md-12">
+            <table id="tblFicha" class="table" style="width:100% !important">
+                <thead class="table-sena">
+                    <tr>
+                        <th scope="col">Código Ficha</th>
+                        <th scope="col">Nombre</th>
+                        <th scope="col">Fecha Inicio</th>
+                        <th scope="col">Fecha Fin</th>
+                        <th scope="col">Opciones</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpoFichas">
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+
+
+    @*modla Nuevo Ficha*@
+    <div class="modal fade" id="modalFicha" tabindex="1" role="dialog" aria-labelledby="modalFichasLabel" aria-hidden="true">
+
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="idTituloModalFicha">Crear Ficha</h5>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label for="recipient-name" class="col-form-label">Código Ficha</label>
+                                <input type="text"
+                                   class="form-control"
+                                   id="txtNumFicha"
+                                   placeholder="Código Ficha"
+                                   required
+                                   maxlength="7">
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label for="recipient-name" class="col-form-label">Nombre Ficha</label>
+                                <input type="text"
+                                   class="form-control"
+                                   id="txtNameFicha"
+                                   placeholder="Nombre Ficha"
+                                   required
+                                   maxlength="100">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label for="recipient-name" class="col-form-label">Fecha Inicio</label>
+                                <input type="date"
+                                   class="form-control"
+                                   id="txtDateIni"
+                                   placeholder="Fecha inicio"
+                                   required>
+
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label for="recipient-name" class="col-form-label">Fecha Fin</label>
+                                <input type="date"
+                                   class="form-control"
+                                   id="txtDateFin"
+                                   placeholder="Fecha fin">
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal" onclick="limpiarForm()">
+                        <i class="fas fa-window-close"></i>
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="guardarFicha()">
+                        <i class="far fa-save"></i>
+                        Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @section Scripts{
+    @{
+            await Html.RenderPartialAsync("_ValidationScriptsPartial");
+        }
+        <script type="text/javascript" charset="utf-8">
+
+            //var model = JSON.parse('@Json.Serialize(@Model)');
+            var listaFichas = [];
+            var listaClass = [];
+            let idFicha = '';
+            //let idClass = '';
+
+            $(document).ready(function () {
+                getAllFichas();
+                //getAllClass();
+            });
+
+            function getAllFichas() {
+                modalProcesando(true, 'Cargando Fichas');
+
+                $.ajax({
+                    url: '@Url.Action("GetAllFichas", "Ficha")',
+                    method: 'GET',
+                    dataType: "json",
+                    success: function (data) {
+                        modalProcesando(false);
+                        if (data.isSuccess) {
+                            listaFichas = data.result;
+                            console.log(listaFichas);
+                            loadGrid(listaFichas);
+                        } else {
+                            Swal.fire(
+                                'Opps!',
+                                data.message,
+                                'error');
+                        }
+                    },
+                    error: function (xhr, textStatus, errorThrown) {
+                        modalProcesando(false);
+                        console.error(xhr, textStatus, errorThrown);
+                    }
+                });
+            }
+
+            function loadGrid(data) {
+                //llenar registro
+                if ($.fn.dataTable.isDataTable('#tblFicha')) {
+                    var table = $('#tblFicha').DataTable();
+                    table.destroy();
+                    cargarGridFichas(data);
+                    llenarGridDataTable('tblFicha');
+                }
+                else {
+                    cargarGridFichas(data);
+                    llenarGridDataTable('tblFicha');
+                }
+            }
+
+
+            function cargarGridFichas(data) {
+                $("#cuerpoFichas").html("");
+
+                for (var i = 0; i < data.length; i++) {
+                    var tr = `
+                                      <tr>
+                                         <th>`+ data[i].numFicha + `</th>
+                                         <th>`+ data[i].name + `</th>
+                                         <th> `+ data[i].strStartDate + `</th>
+                                         <th> `+ data[i].strEndDate + `</th>
+
+                                     <td>
+                                                <button  class="btn btn-warning" onclick="editarFicha(`+ data[i].idFicha + `)"><i class="fas fa-edit"></i> Editar</button>
+                                                        <button class="btn btn-danger" onclick="eliminarFicha(`+ data[i].idFicha + `)"><i class="fas fa-trash-alt"></i> Eliminar</button>
+                                      </td>
+                                     </tr>
+                                      `;
+                    $("#cuerpoFichas").append(tr);
+                }
+            }
+
+
+            function nuevaFicha() {
+                limpiarForm();
+                //$('#idTituloModalBooks').html("Crear Libro");
+                const modal = new bootstrap.Modal('#modalFicha', {
+                    keyboard: true
+                });
+                modal.show();
+
+            }
+
+            function guardarFicha() {
+                if (validarForm()) {
+                    let parametro = {
+                        NumFicha: $("#txtNumFicha").val(),
+                        Name: $("#txtNameFicha").val(),
+                        StartDate: $("#txtDateIni").val(),
+                        EndDate: $("#txtDateFin").val()
+                    };
+
+                    if (idFicha == '') {
+                        modalProcesando(true, 'Guardando Ficha');
+                        $.ajax({
+                            url: '@Url.Action("InsertFicha", "Ficha")',
+                            method: 'POST',
+                            data: {
+                                fichaDto: parametro,
+                            },
+                            dataType: "json",
+                            success: function (data) {
+                                modalProcesando(false);
+                                console.log(data);
+                                if (data.isSuccess) {
+                                    closeModal('modalFicha');
+                                    limpiarForm();
+                                    toastMessage('success', data.message);
+                                    setTimeout(function () {
+                                        getAllFichas();
+                                    }, 500);
+                                    //getAllFichas();
+                                } else {
+                                    toastMessage('error', data.message);
+                                }
+                            },
+                            error: function (xhr, textStatus, errorThrown) {
+                                modalProcesando(false);
+                                //toastMessage('error', 'Hubo un error al guardar, por favor intentarlo nuevamente!');
+                                console.error(xhr, textStatus, errorThrown);
+                                if (xhr.status == 400) {
+                                    Swal.fire(
+                                        'Alerta!',
+                                        xhr.responseJSON.message,
+                                        'warning');
+                                } else {
+                                    Swal.fire(
+                                        'Opps!',
+                                        xhr.responseJSON.message,
+                                        'error');
+                                }
+                            }
+                        });
+                    }
+                    else {
+                        parametro.IdFicha = idFicha;
+
+                        console.log('Prueba Editar');
+                        modalProcesando(true, 'Editando Ficha');
+                        $.ajax({
+                            url: '@Url.Action("UpdateFicha", "Ficha")',
+                            method: 'PUT',
+                            data: parametro,
+                            dataType: "json",
+                            success: function (data) {
+                                modalProcesando(false);
+                                if (data) {
+                                    closeModal('modalFicha');
+                                    limpiarForm();
+                                    toastMessage('success', 'Ficha editada exitosamente!');
+                                    getAllFichas();
+                                } else {
+                                    toastMessage('error', data.message);
+                                }
+                            },
+                            error: function (xhr, textStatus, errorThrown) {
+                                modalProcesando(false);
+                                //toastMessage('error', 'Hubo un error al guardar, por favor intentarlo nuevamente!');
+                                console.error(xhr, textStatus, errorThrown);
+                                if (xhr.status == 400) {
+                                    Swal.fire(
+                                        'Alerta!',
+                                        xhr.responseJSON.message,
+                                        'warning');
+                                } else {
+                                    Swal.fire(
+                                        'Opps!',
+                                        xhr.responseJSON.message,
+                                        'error');
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+
+            function validarForm() {
+                if ($("#txtNumFicha").val() == '') {
+                    $("#txtNumFicha").focus();
+                    toastMessage('warning', 'El código de la ficha es obligatorio');
+                    return false;
+                }
+                if ($("#txtNameFicha").val() == '') {
+                    $("#txtNameFicha").focus();
+                    toastMessage('warning', 'El nombre de la ficha es obligatorio');
+                    return false;
+                }
+                if ($("#txtDateIni").val() == '') {
+                    $("#txtDateIni").focus();
+                    toastMessage('warning', 'La fecha inicio es obligatoria.');
+                    return false;
+                }
+                if ($("#txtDateFin").val() == '') {
+                    $("#txtDateFin").focus();
+                    toastMessage('warning', 'La fecha fin es obligatoria.');
+                    return false;
+                }
+
+                return true;
+            }
+
+            function limpiarForm() {
+                $("#txtNumFicha").val('');
+                $("#txtNumFicha").removeAttr("readonly");
+                $("#txtNameFicha").val('');
+                $("#txtDateIni").val('');
+                $("#txtDateFin").val('');
+                idFicha = '';
+            }
+
+            function editarFicha(id) {
+                idFicha = id;
+                console.log(id);
+                let dates = listaFichas.find(x => x.idFicha == idFicha);
+                $('#txtNumFicha').val(dates.numFicha)
+                $("#txtNumFicha").attr("readonly", "readonly");
+                $('#txtNameFicha').val(dates.name);
+                //Formateando Fecha Inicio
+                let fechaDevolucion = dates.startDate;
+                console.log(fechaDevolucion);
+                var fecha = new Date(fechaDevolucion); //Fecha actual
+                var mes = fecha.getMonth() + 1; //obteniendo mes
+                var dia = fecha.getDate(); //obteniendo dia
+                var ano = fecha.getFullYear(); //obteniendo año
+                if (dia < 10)
+                    dia = '0' + dia; //agrega cero si el menor de 10
+                if (mes < 10)
+                    mes = '0' + mes; //agrega cero si el menor de 10
+                document.getElementById('txtDateIni').value = ano + "-" + mes + "-" + dia;
+                //Formateando Fecha Fin
+                let fechaFin = dates.endDate;
+                console.log(fechaFin);
+                var fecha = new Date(fechaFin); //Fecha actual
+                var mes = fecha.getMonth() + 1; //obteniendo mes
+                var dia = fecha.getDate(); //obteniendo dia
+                var ano = fecha.getFullYear(); //obteniendo año
+                if (dia < 10)
+                    dia = '0' + dia; //agrega cero si el menor de 10
+                if (mes < 10)
+                    mes = '0' + mes; //agrega cero si el menor de 10
+                document.getElementById('txtDateFin').value = ano + "-" + mes + "-" + dia;
+
+
+                $('#idTituloModalFicha').html("Editar Ficha");
+                const modal = new bootstrap.Modal('#modalFicha', {
+                    keyboard: true
+                });
+                modal.show();
+            }
+
+            function eliminarFicha(idFicha) {
+                console.log(idFicha);
+                Swal.fire({
+                    title: '¿Confirmar Eliminacion?',
+                    text: "No podrás revertir esto.!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonText: 'Si, Eliminar!',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+
+                        modalProcesando(true, 'Eliminando Ficha');
+                        //petición
+                        $.ajax({
+                            url: '@Url.Action("DeleteFicha", "Ficha")',
+                            method: 'DELETE',
+                            data: {
+                                idFicha: idFicha
+                            },
+                            dataType: "json",
+                            success: function (data) {
+                                modalProcesando(false);
+                                console.log(data);
+                                if (data.isSuccess) {
+
+                                    listaFichas = listaFichas.filter(x => x.idFicha != idFicha);
+                                    cargarGridFichas(listaFichas);
+
+                                    Swal.fire(
+                                        'Eliminado!',
+                                        data.message,
+                                        'success');
+                                } else {
+                                    Swal.fire(
+                                        'Error!',
+                                        data.message,
+                                        'error');
+                                }
+                            },
+                            error: function (xhr, textStatus, errorThrown) {
+                                modalProcesando(false);
+                                console.error(xhr, textStatus, errorThrown);
+                            }
+                        });
+                    }
+
+                });
+            }
+        </script>
+
+   }
+}
+else
+{
+    @section Scripts{
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function () {
+            Swal.fire(
+                '¡Usuario no Autorizado!',
+                'No tiene suficientes privilegios para ver esta sección.',
+                'error');
+        });
+    </script>
+     }
+}
+
+

@@ -1,0 +1,60 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+<div class="row">
+    <div class="col-md-6 form-group">
+        <label for="recipient-name" class="col-form-label">Fecha Inicio</label>
+        <input type="date"
+               class="form-control"
+               id="txtStartDate"
+               placeholder="Fecha inicio"
+               required>
+
+    </div>
+    <div class="col-md-6 form-group">
+        <label for="recipient-name" class="col-form-label">Fecha Fin</label>
+        <input type="date"
+               class="form-control"
+               id="txtEndDate"
+               placeholder="Fecha fin">
+    </div>
+</div>
+
+
+<script type="text/javascript" charset="utf-8">
+
+    function validateDate()
+    {
+        let fechaInicio=$('#txtStartDate').val();
+        if (fechaInicio == '') {
+            $("#txtStartDate").focus();
+            toastMessage('warning', 'La fecha inicio obligatoria.');
+            return false;
+        }
+
+        let fechaFin=$('#txtEndDate').val();
+        if (fechaFin == '') {
+            $("#txtEndDate").focus();
+            toastMessage('warning', 'La fecha fin es obligatoria.');
+            return false;
+        }
+
+        if(Date.parse(fechaInicio) >Date.parse(fechaFin))
+        {
+            $("#txtStartDate").focus();
+            toastMessage('warning', 'La fecha inicio no puede ser mayor que la fecha fin.');
+            return false;
+        }
+
+        return true;
+    }
+
+    function cleanDate()
+    {
+        $("#txtStartDate").val('');
+        $("#txtEndDate").val('');
+    }
+
+</script>

@@ -1,0 +1,630 @@
+﻿@using GA.Domain.DTO.User;
+@using Common.Utils.Enums
+@using static Common.Utils.Constant.Const
+@{
+    ViewData["Title"] = "Usuarios";
+
+    var idRols = User.Claims.FirstOrDefault(x => x.Type == TypeClaims.IdRol).Value;
+
+    bool isAdmin = idRols.Any(x => x.ToString() == Convert.ToInt32(Enums.RolUser.Administrador).ToString());
+}
+@model GA.Domain.DTO.User.InsertUserDto
+@{
+    var isInstructor = Model.IsInstructor;
+}
+@if (isAdmin)
+{
+    <div class="row">
+        <div class="col-md-6">
+
+            @if (Model.IsInstructor)
+            {
+                <h1>Listado Instructor</h1>
+            }
+            else
+            {
+                <h1>Listado Aprendiz </h1>
+            }
+        </div>
+    </div>
+
+    <div class="row justify-content-end mt-4">
+        <div class="col-auto">
+            @if (Model.IsInstructor)
+            {
+                <button class="btn btn-primary buttonTitle" onclick="nuevoUsuario()">
+                    <i class="fas fa-chalkboard-teacher"></i> Nuevo Instructor
+                </button>
+
+
+            }
+            else
+            {
+                @*  <a class="btn btn-primary buttonTitle" href="https://localhost:44331/User/ViewExcel">
+                    <i class="fas fa-user-plus"></i>
+                    Nuevos Aprendices
+                    </a>*@
+                <button class="btn btn-primary buttonTitle me-1" onclick="nuevosUsuarios()">
+                    <i class="fas fa-user-plus"></i>
+                    Nuevos Aprendices
+                </button>
+                <button class="btn btn-primary buttonTitle me-1" onclick="nuevoUsuario()">
+                    <i class="fas fa-user-graduate"></i> Nuevo Aprendiz
+                </button>
+
+            }
+        </div>
+    </div>
+
+    <hr />
+
+    <div class="row">
+        <div class="col-md-12">
+            <table id="tblUser" class="table " style="width:100% !important">
+                <thead class="table-sena">
+                    <tr>
+                        <th scope="col">Nombres</th>
+                        <th scope="col">Apellidos</th>
+                        <th scope="col">Correo</th>
+                        <th scope="col">Teléfono</th>
+                        <th scope="col">Opciones</th>
+                    </tr>
+
+                </thead>
+                <tbody id="cuerpoUsers">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @*modla Nuevo Usuario*@
+    <div class="modal fade" id="modalUsers" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="1" role="dialog" aria-labelledby="modalUsersLabel" aria-hidden="true">
+
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    @if (Model.IsInstructor)
+                    {
+                        <h5 class="modal-title" id="idTituloModalUsers">Crear Instructor</h5>
+                    }
+                    else
+                    {
+                        <h5 class="modal-title" id="idTituloModalUsers">Crear Aprendiz</h5>
+                    }
+
+                </div>
+                <div class="modal-body">
+                    <form>
+
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label for="recipient-name" class="col-form-label">Nombre</label>
+                                <input type="text"
+                                   class="form-control"
+                                   id="txtName"
+                                   placeholder="Nombre"
+                                   required
+                                   maxlength="30">
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label for="recipient-name" class="col-form-label">Apellido</label>
+                                <input type="text"
+                                   class="form-control"
+                                   id="txtLastName"
+                                   placeholder="Apellido"
+                                   required
+                                   maxlength="30">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label for="recipient-name" class="col-form-label">Identificación</label>
+                                <input type="text"
+                                   class="form-control"
+                                   id="txtIdentification"
+                                   placeholder="Identificación"
+                                   required
+                                   maxlength="10">
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label for="recipient-name" class="col-form-label">Teléfono Celular</label>
+                                <input type="text"
+                                   class="form-control"
+                                   id="txtTelefono"
+                                   placeholder="Teléfono"
+                                   maxlength="10">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label for="recipient-name" class="col-form-label">Correo electrónico</label>
+                                <input type="text"
+                                   class="form-control"
+                                   id="txtEmail"
+                                   placeholder="Correo electrónico"
+                                   required
+                                   maxlength="50">
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label for="recipient-name" class="col-form-label">Ficha</label>
+                                <select class="form-control" id="cmbFichas" style="width: 100%;"></select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal" onclick="limpiarForm()">
+                        <i class="fas fa-window-close"></i>
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="guardarUser()">
+                        <i class="far fa-save"></i>
+                        Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @*modla Nuevoss Usuariosss*@
+    <div class="modal fade" id="modalUsersMasivo" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="1" role="dialog" aria-labelledby="modalUsersLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-md" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="idTituloModalUsers">Insercción masiva de aprendices</h5>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="row">
+                            <div class="col-md-12 form-group">
+                                <label class="control-label"> Ficha </label>
+                                <select class="form-control" id="cmbAllFichas" onchange="selectAllFicha()" name="idFicha" required>
+                                    <option> Selecciona una Ficha</option>
+                                    @*<option data-toggle="tooltip" data-placement="top" title="Tooltip on top"> Seleccionar Ficha</option>*@
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="limpiarForm()">
+                        <i class="fas fa-window-close"></i>
+                        Cancelar
+                    </button>
+                    <a class="btn btn-success" id="btnMasivo" onclick="gestionarCotitular()">
+                        Next!
+                        <i class="fas fa-chevron-circle-right"></i>
+
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    @section Scripts{
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+<script type="text/javascript" charset="utf-8">
+
+    var model = JSON.parse('@Json.Serialize(@Model)');
+    var listaUsers = [];
+    var listaFichas = [];
+    var User = [];
+    let idUser = '';
+    let idFichas = '';
+    let idFicha='';
+    let idAllFicha = '';
+    let idFichaText='';
+    let isInstructor = model.isInstructor
+
+    $(document).ready(function () {
+        getAllUser(model.isInstructor);
+        getAllFichas();
+    });
+
+
+    function loadGrid(data) {
+        //llenar registro
+        if ($.fn.dataTable.isDataTable('#tblUser')) {
+            var table = $('#tblUser').DataTable();
+            table.destroy();
+            cargarGridUsers(data);
+            llenarGridDataTable('tblUser');
+        }
+        else {
+            cargarGridUsers(data);
+            llenarGridDataTable('tblUser');
+        }
+    }
+
+    function getAllUser(isInstructor) {
+        modalProcesando(true);
+        $.ajax({
+            url: '@Url.Action("GetAllUser", "User")',
+            method: 'GET',
+            data: {
+                isInstructor: isInstructor
+            },
+            dataType: "json",
+            success: function (data) {
+                modalProcesando(false);
+                console.log(data);
+                if (data.isSuccess) {
+                    listaUsers = data.result;
+                    loadGrid(listaUsers);
+                    console.log(listaUsers);
+                } else {
+                    Swal.fire(
+                        'Opps!',
+                        data.message,
+                        'error');
+                }
+            },
+            error: function (xhr, textStatus, errorThrown) {
+                modalProcesando(false);
+                console.error(xhr, textStatus, errorThrown);
+            }
+        });
+    }
+
+    function getAllFichas() {
+        //modalProcesando(true, 'Cargando Fichas');
+        $.ajax({
+            url: '@Url.Action("GetAllFichas", "Ficha")',
+            method: 'GET',
+            dataType: "json",
+            success: function (data) {
+                modalProcesando(false);
+                console.log(data);
+                if (data.isSuccess) {
+                    listaFichas = data.result;
+                    console.log(listaFichas);
+                    loadAllFichas(listaFichas);
+                } else {
+                    Swal.fire(
+                        'Opps!',
+                        data.message,
+                        'error');
+                }
+            },
+            error: function (xhr, textStatus, errorThrown) {
+                modalProcesando(false);
+                toastMessage('error', 'Hubo un error al cargar fichas, por favor intentarlo nuevamente!');
+                console.error(xhr, textStatus, errorThrown);
+            }
+        });
+    }
+
+    function cargarGridUsers(data) {
+        console.log('Llamada',data);
+
+        $("#cuerpoUsers").html("");
+
+        for (var i = 0; i < data.length; i++) {
+            var tr = `
+                      <tr>
+                         <th>`+ data[i].name + `</th>
+                         <th> `+ data[i].lastName + `</th>
+                         <th> `+ data[i].userName + `</th>
+                         <th> `+ data[i].telefono + `</th>
+                     <td>
+                                        <button  class="btn btn-warning" onclick="editarUser(`+ data[i].idUser + `)"><i class="fas fa-user-edit"></i> Editar</button>
+                                        <button class="btn btn-danger" onclick="eliminarUser(`+ data[i].idUser + `)"><i class="fas fa-user-minus"></i> Eliminar</button>
+                      </td>
+                     </tr>
+                      `;
+            $("#cuerpoUsers").append(tr);
+        }
+    }
+
+    function validarForm() {
+        if ($("#txtName").val() == '') {
+            $("#txtName").focus();
+            toastMessage('warning', 'El nombre es obligatorio.');
+            return false;
+        }
+
+        if ($("#txtLastName").val() == '') {
+            $("#txtLastName").focus();
+            toastMessage('warning', 'El Apellido obligatorio.');
+            return false;
+        }
+        if ($("#txtIdentification").val() == '') {
+            $("#txtIdentification").focus();
+            toastMessage('warning', 'La identificación es obligatoria.');
+            return false;
+        }
+        if ($("#txtEmail").val() == '') {
+            $("#txtEmail").focus();
+            toastMessage('warning', 'El correo electrónico es obligatorio.');
+            return false;
+        }
+        if (idFichas == '') {
+            $("#cmbFichas").focus();
+            toastMessage('warning', 'Debe seleccionar almenos una ficha.');
+            return false;
+        }
+        return true;
+    }
+
+    function limpiarForm() {
+        $("#txtName").val('');
+        $("#txtLastName").val('');
+        $("#txtIdentification").val('');
+        $("#txtTelefono").val('');
+        $("#txtEmail").val('');
+        $("#cmbFichas").val('');
+        $("#cmbAllFichas").val('');
+        idFichas='';
+        idFicha='';
+        idUser = '';
+    }
+
+
+    function nuevoUsuario() {
+        limpiarForm();
+        //$('#idTituloModalBooks').html("Crear Libro");
+        //$('#modalUsers').modal({ keyboard: true });
+        var list = transformarDataSelect2Fichas(listaFichas);
+        $('#cmbFichas').select2({
+            width: 'resolve',
+            placeholder: 'Selección de Fichas',
+            dropdownParent: $('#modalUsers'),
+            data: list,
+            tokenSeparators: [',', ' '],
+            multiple: true
+        });
+        const modalUSer = new bootstrap.Modal('#modalUsers', {
+            keyboard: true
+        });
+        modalUSer.show();
+    }
+    function nuevosUsuarios() {
+
+        limpiarForm();
+        const modalUSer = new bootstrap.Modal('#modalUsersMasivo', {
+            keyboard: true
+        });
+        modalUSer.show();
+    }
+
+
+    function loadAllFichas(data, selected) {
+        $("#cmbAllFichas").empty();
+        $("#cmbAllFichas").append('<option value="" disabled selected>Seleccione una Ficha</option>');
+        $.each(data, function (i, lista) {
+            if (data[i].idFicha == selected) {
+                $("#cmbAllFichas").append('<option style="cursor:pointer;"  data-toggle="tooltip" data-placement="top" title="' + data[i].name + '" value="' + data[i].idFicha + '"selected>' + data[i].numFicha + '</option>');
+            } else {
+                $("#cmbAllFichas").append('<option style="cursor:pointer;"  data-toggle="tooltip" data-placement="top" title="' + data[i].name + '" value="' + data[i].idFicha + '">' + data[i].numFicha + '</option>');
+            }
+        });
+    }
+
+    function selectAllFicha() {
+        var combo = document.getElementById("cmbAllFichas");
+        let selected = combo.options[combo.selectedIndex].value;
+        let text = combo.options[combo.selectedIndex].text;
+        idAllFicha = selected;
+        idFichaText =text;
+    }
+
+
+    function gestionarCotitular() {
+        var coownerUrl = '@Url.Action("ViewExcel", "User")';
+        window.location.href = coownerUrl + '?idFicha=' + idAllFicha;
+    }
+
+    function guardarUser() {
+
+          var combo = document.getElementById("cmbFichas");
+        if (combo.selectedIndex != -1)
+         {
+            var selected = document.querySelectorAll('#cmbFichas option:checked');
+
+            //obtener el valor del texto
+            //var tecString = Array.from(selected).map(el => el.innerText);
+            //var fichas = tecString.join(',');
+            //console.log(fichas);
+
+            //obtener el valor del id
+            var valueString = Array.from(selected).map(el => el.attributes.value.value);
+            idFichas = valueString.join(',');
+            console.log(idFichas);
+        }
+        if (validarForm()) {
+            let parametro = {
+                Name: $("#txtName").val(),
+                LastName: $("#txtLastName").val(),
+                Identification: $("#txtIdentification").val(),
+                Email: $("#txtEmail").val(),
+                Telefono: $("#txtTelefono").val(),
+                IdUser:idUser,
+                IdFichas:idFichas,
+            };
+
+            if (idUser == '') {
+                modalProcesando(true);
+
+                console.log('Prueba Insertar');
+                $.ajax({
+                    url: '@Url.Action("InsertUser", "User")',
+                    method: 'POST',
+                    data: {
+                        userInsert: parametro,
+                        isInstructor: isInstructor
+                    },
+                    dataType: "json",
+                    success: function (data) {
+                        modalProcesando(false);
+                        console.log(data);
+                        if (data.isSuccess) {
+                            closeModal('modalUsers');
+                            limpiarForm();
+                            toastMessage('success', data.message);
+                            getAllUser(isInstructor);
+                        } else {
+                            toastMessage('error', data.message);
+                        }
+                    },
+                    error: function (xhr, textStatus, errorThrown) {
+                        modalProcesando(false);
+                        //toastMessage('error', 'Hubo un error al guardar, por favor intentarlo nuevamente!');
+                        console.error(xhr, textStatus, errorThrown);
+                        swaMessage(xhr.status,xhr.responseJSON.message);
+                    }
+                });
+            } else {
+                parametro.IdUser = idUser;
+                parametro.IdFichas = idFichas;
+                modalProcesando(true);
+                $.ajax({
+                    url: '@Url.Action("UpdateUser", "User")',
+                    method: 'PUT',
+                    data: {
+                        updateUser: parametro,
+                    },
+                    dataType: "json",
+                    success: function (data) {
+                        modalProcesando(false);
+                        if (data.isSuccess) {
+                            closeModal('modalUsers');
+                            limpiarForm();
+                            toastMessage('success', data.message);
+                            getAllUser(isInstructor);
+                        } else {
+                            toastMessage('error', data.message);
+                        }
+                    },
+                    error: function (xhr, textStatus, errorThrown) {
+                        modalProcesando(false);
+                        //toastMessage('error', 'Hubo un error al guardar, por favor intentarlo nuevamente!');
+                        console.error(xhr, textStatus, errorThrown);
+                        swaMessage(xhr.status,xhr.responseJSON.message);
+                    }
+                });
+            }
+        }
+    }
+
+    function editarUser(idUserr) {
+        console.log(idUserr);
+        console.log(isInstructor);
+        limpiarForm();
+        idUser = idUserr;
+
+        let userSelect = listaUsers.find(x => x.idUser == idUser);
+        var list = transformarDataSelect2Fichas(listaFichas);
+
+        $('#cmbFichas').select2({
+            width: 'resolve',
+            placeholder: 'Selección de Fichas',
+            dropdownParent: $('#modalUsers'),
+            tokenSeparators: [',', ' '],
+            multiple: true,
+            data: list
+        });
+
+        //select data
+        $('#cmbFichas').val(userSelect.listIdFichas).trigger('change');
+        $("#txtLastName").val(userSelect.name);
+        $("#txtName").val(userSelect.lastName);
+        $("#txtIdentification").val(userSelect.identification);
+        $("#txtTelefono").val(userSelect.telefono);
+        $("#txtEmail").val(userSelect.userName);
+        if (isInstructor) {
+          $("#idTituloModalUsers").html('Editar Instructor');
+        }else{
+
+          $("#idTituloModalUsers").html('Editar Aprendiz');
+        }
+        const modal = new bootstrap.Modal('#modalUsers', {
+            keyboard: true
+        });
+        modal.show();
+    }
+
+    function eliminarUser(idUserr) {
+        console.log('Prueba Eliminar');
+        console.log(idUserr);
+        Swal.fire({
+            title: '¿Confirmar Eliminacion?',
+            text: "No podrás revertir esto.!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            cancelButtonText: 'Cancelar',
+            confirmButtonText: 'Si, Eliminar!',
+        }).then((result) => {
+            if (result.isConfirmed) {
+
+                modalProcesando(true);
+                $.ajax({
+                    url: '@Url.Action("DeleteUser", "User")',
+                    method: 'DELETE',
+                    data: {
+                        idUser: idUserr,
+                    },
+                    dataType: "json",
+                    success: function (data) {
+                        modalProcesando(false);
+                        if (data.isSuccess) {
+                            toastMessage('success', data.message);
+                            getAllUser(isInstructor);
+                        } else {
+                            toastMessage('error', data.message);
+                        }
+                    },
+                    error: function (xhr, textStatus, errorThrown) {
+                        modalProcesando(false);
+                        //toastMessage('error', 'Hubo un error al guardar, por favor intentarlo nuevamente!');
+                        console.error(xhr, textStatus, errorThrown);
+                        if (xhr.status == 400) {
+                            Swal.fire(
+                                'Alerta!',
+                                xhr.responseJSON.message,
+                                'warning');
+                        } else {
+                            Swal.fire(
+                                'Opps!',
+                                xhr.responseJSON.message,
+                                'error');
+                        }
+                    }
+                });
+            }
+
+        });
+
+
+
+    }
+
+
+
+
+</script>
+
+   }
+
+}
+else
+{
+    @section Scripts{
+<script type="text/javascript" charset="utf-8">
+    $(document).ready(function () {
+        Swal.fire(
+            '¡Usuario no Autorizado!',
+            'No tiene suficientes privilegios para ver esta sección.',
+            'error');
+    });
+</script>
+     }
+}
+@*@await Html.PartialAsync("_InsertUser",isInstructor)*@
+
+
+
+
+
+

@@ -1,0 +1,435 @@
+﻿@using Common.Utils.Enums
+@using Microsoft.AspNetCore.Identity
+@using static Common.Utils.Constant.Const
+@{
+    var idRols = User.Claims.FirstOrDefault(x => x.Type == TypeClaims.IdRol).Value;
+
+    bool isAdmin = idRols.Any(x => x.ToString() == Convert.ToInt32(Enums.RolUser.Administrador).ToString());
+    bool isStandar = idRols.Any(x => x.ToString() == Convert.ToInt32(Enums.RolUser.Estandar).ToString());
+
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - GestionAsistencia</title>
+    <link rel="stylesheet" href=~/css/sidebar.css />
+    <link rel="stylesheet" href=~/css/site.css />
+    <link rel="stylesheet" href="~/lib/bootstrap-5.2.3/dist/css/bootstrap.css" />
+    <style>
+        .logoSena {
+            width: 50px;
+            border-radius: 50%;
+            font-size: 1.25rem;
+            color: var(--white-color);
+            Background: white;
+        }
+
+        .span_logo {
+            margin-left: -22px;
+        }
+
+        .header_notification {
+            margin-right: -60.60rem;
+        }
+
+        .notification {
+            font-size: 1.25rem;
+            color: #08c284;
+        }
+    </style>
+
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boxicons@latest/css/boxicons.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+          integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ=="
+          crossorigin="anonymous"
+          referrerpolicy="no-referrer" />
+
+    @*data table*@
+    <link rel="stylesheet" href="~/lib/DataTables/datatables.min.css">
+    <link rel="stylesheet" href="~/lib/DataTables/Buttons-2.3.3/css/buttons.bootstrap5.min.css">
+    <link rel="stylesheet" href="~/lib/DataTables/DataTables-1.13.1/css/dataTables.bootstrap5.min.css">
+
+
+    @*Select2*@
+    <link href="~/lib/select2/css/select2.min.css" rel="stylesheet" /> 
+    
+    @*toastr*@
+    <link href="~/lib/toastr/css/toastr.min.css" rel="stylesheet" />
+
+</head>
+<body id="body-pd">
+
+    <header class="header" id="header">
+
+        <div class="header_toggle"> <i class='bx bx-menu' id="header-toggle"></i> </div>
+        @*<div class="header_notification"><i class="fas fa-bell  notification"></i></div>*@
+        @if (User != null)
+        {
+
+            @* <div class="header_img">
+                <img src="https://i.imgur.com/hczKIze.jpg" alt="">
+                </div>
+            *@
+            <div class="header_Logueado">
+                <span class="noti  fas fa-bell"><span class="count">&nbsp;</span></span>
+                <div class="noti-content">
+                    <div class="noti-top-arrow"></div>
+                    <ul id="notiContent"></ul>
+                </div>
+                @User.Identity.Name!
+            </div>
+
+        }
+    </header>
+
+    <div class="l-navbar" id="nav-bar">
+        <nav class="nav">
+            <div>
+                <a href="#" class="nav_logo">
+                    @*<i class='bx bx-layer nav_logo-icon'></i>*@
+                    <div class="span_logo"> <img class="logoSena" src="~/img/logoSena.png" alt="Logo"> </div>
+                    @*<img src="~/img/logoSena.png" alt="Logo">*@
+                    <span class="nav_logo-name">Gestión Asistencias</span>
+                </a>
+                <div class="nav_list">
+                    @if (isAdmin)
+                    {
+                        <a href="/User/Index?isInstructor=true" class="nav_link">
+                            @*    <i class='bx bx-user nav_icon'></i>*@
+                            @* <i class='bx bx-user nav_icon'></i>*@
+                            <i class="fas fa-chalkboard-teacher nav_icon"></i>
+                            <span class="nav_name">Instructor</span>
+                        </a>
+                        <a href="/User/Index?isInstructor=false" class="nav_link">
+                            @*<i class='bx bx-user nav_icon'></i>*@
+                            <i class="fas fa-user-graduate nav_icon"></i>
+                            <span class="nav_name">Estudiantes</span>
+                        </a>
+                        <a class="nav_link" asp-area="" asp-controller="Ficha" asp-action="Index">
+                            @*<i class='bx bx-bookmark nav_icon'></i>*@
+                            <i class="fas fa-certificate"></i>
+                            <span class="nav_name">Ficha</span>
+
+                        </a>
+                        <a class="nav_link" asp-area="" asp-controller="Class" asp-action="Index">
+                            @*<i class='bx bx-bookmark nav_icon'></i>*@
+                            <i class="fas fa-feather"></i>
+                            <span class="nav_name">Clases</span>
+
+                        </a>
+                         <a class="nav_link" asp-area="" asp-controller="Excuse" asp-action="Index">
+                            @*<i class='bx bx-bookmark nav_icon'></i>*@
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span class="nav_name">Excusa</span>
+
+                        </a>
+                        <a class="nav_link" asp-area="" asp-controller="Presence" asp-action="Index">
+                            @*<i class='bx bx-bookmark nav_icon'></i>*@
+                            <i class="fas fa-user-check"></i>
+                            <span class="nav_name">Asistencia</span>
+
+                        </a>
+                      
+                    }
+                    @if (isStandar)
+                    {
+                          <a class="nav_link" asp-area="" asp-controller="Excuse" asp-action="Index">
+                            @*<i class='bx bx-bookmark nav_icon'></i>*@
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span class="nav_name">Excusa</span>
+
+                        </a>
+                        <a class="nav_link" asp-area="" asp-controller="Presence" asp-action="Index">
+                            @*<i class='bx bx-bookmark nav_icon'></i>*@
+                            <i class="fas fa-user-check"></i>
+                            <span class="nav_name">Asistencia</span>
+
+                        </a>
+                    }
+                    <a class="nav_link" asp-area="" asp-controller="Configure" asp-action="Index">
+                        @*<i class='bx bx-bookmark nav_icon'></i>*@
+                        @*<i class="fas fa-certificate"></i>*@
+                        <i class="fas fa-user-cog"></i>
+                        <span class="nav_name">Configuraciones</span>
+
+                    </a>
+                </div>
+            </div>
+            <a class="nav_link" asp-area="" asp-controller="Auth" asp-action="Logout">
+                @*<i class='bx bx-bookmark nav_icon'></i>*@
+                <i class='bx bx-log-out nav_icon'></i>
+                <span class="nav_name">SignOut</span>
+
+            </a>
+
+        </nav>
+    </div>
+
+    <!--Container Main start-->
+    <div class="container-fluid" style="margin-top: 80px !important; ">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <div class="modal fade" id="container-modal-procesando" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body" style="text-align:center;font-weight:bold">
+                    <p id="mensaje-modal-procesando">Por favor espere</p>
+                    <div align="center"><img width="100%" src="~/img/cargando.gif"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2022 - GestionAsistencia - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+
+    <h4></h4>
+
+
+    <style type="text/css">
+        /*Added css for design notification area, you can design by your self*/
+        /* COPY css content from youtube video description*/
+        .noti-content {
+            position: fixed;
+            right: 100px;
+            background: #e5e5e5;
+            border-radius: 4px;
+            top: 47px;
+            width: 250px;
+            display: none;
+            border: 1px solid #9E988B;
+        }
+
+        ul#notiContent {
+            max-height: 200px;
+            overflow: auto;
+            padding: 0px;
+            margin: 0px;
+            padding-left: 20px;
+        }
+
+            ul#notiContent li {
+                margin: 3px;
+                padding: 6px;
+                background: #fff;
+            }
+
+        .noti-top-arrow {
+            border-color: transparent;
+            border-bottom-color: #F5DEB3;
+            border-style: dashed dashed solid;
+            border-width: 0 8.5px 8.5px;
+            position: absolute;
+            right: 32px;
+            top: -8px;
+        }
+
+        span.noti {
+            color: #FF2323;
+            margin: 15px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        span.count {
+            position: relative;
+            top: -3px;
+        }
+    </style>
+
+  
+
+
+    <script src="~/js/sidebar.js"></script>
+    <script src="~/js/site.js"></script>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap-5.2.3/dist/js/bootstrap.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.3.6/dist/sweetalert2.all.min.js"></script>
+
+    @*<script src="https://kit.fontawesome.com/0ba41b716c.js" crossorigin="anonymous"></script>*@
+    @*dataTable*@
+    <script src="~/lib/DataTables/datatables.min.js"></script>
+    <script src="~/lib/DataTables/Buttons-2.3.3/js/buttons.bootstrap5.min.js"></script>
+    <script src="~/lib/DataTables/DataTables-1.13.1/js/dataTables.bootstrap5.min.js"></script>
+
+    @*select2*@
+    <script src="~/lib/select2/js/select2.min.js"></script>
+    
+    @*toastr*@
+    <script src="~/lib/toastr/js/toastr.min.js"></script>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>
+<script>
+
+    var listNotification=[];
+    $(document).ready(function () {
+        updateNotification();
+
+        // Click on notification icon for show notification
+        $('span.noti').click(function (e) {
+            e.stopPropagation();
+            $('.noti-content').show();
+            var count = 0;
+            count = parseInt($('span.count').html()) || 0;
+            //only load notification if not already loaded
+            if (count > 0) {
+                updateNotification();
+            }
+
+            $('span.count', this).html('&nbsp;');
+        })
+        // hide notifications
+        $('html').click(function () {
+            $('.noti-content').hide();
+        })
+
+        //Actualizo el contador de notificaciones
+        setTimeout(function () {
+            $('span.count').html(listNotification.length);
+        }, 800);
+     });
+
+      // update notification count
+    function updateNotificationCount() {
+        var count = 0;
+        count = parseInt($('span.count').html()) || 0;
+        count++;
+        $('span.count').html(count);
+    }
+
+        // update notification
+    function updateNotification() {
+        modalProcesando(true,'Consultando Notificaciones');
+        $('#notiContent').empty();
+        $('#notiContent').append($('<li>Loading...</li>'));
+        $.ajax({
+            url: '@Url.Action("GetNotification", "home")',
+            method: 'GET',
+            dataType: "json",
+            success: function (data) {
+                modalProcesando(false);
+                if (data.isSuccess) {
+                    //closeModal('modalAsistencia');
+                    $('#notiContent').empty();
+                    listNotification=data.result;
+                    if (listNotification.length  == 0) {
+                        $('#notiContent').append($('<li>No hay notificaciones</li>'));
+                    }
+                    
+                    $.each(data.result, function (index, value) {
+                        $('#notiContent').append($('<li> <h6>' + value.title + '</h6> <p>' + value.description + '</p> </li>'));
+                    });
+                    } else {
+                        swaMessage(400,data.message);
+                    }
+            },
+            error: function (xhr, textStatus, errorThrown) {
+                modalProcesando(false);
+                //toastMessage('error', 'Hubo un error al guardar, por favor intentarlo nuevamente!');
+                console.error(xhr, textStatus, errorThrown);
+                swaMessage(xhr.status,xhr.responseJSON.message);
+            }
+        });
+    }
+
+     function modalProcesando(desplegar,titulo)
+     {
+         if(desplegar)
+         {
+             if(titulo != undefined && titulo!=null){
+                 $("#mensaje-modal-procesando").html(titulo);
+             }
+             else{
+                  $("#mensaje-modal-procesando").html('Por favor espere');
+             }
+             const modalProcesando = new bootstrap.Modal('#container-modal-procesando', {
+                      keyboard: false
+                    });
+                    modalProcesando.show();
+         }else{
+            //console.log('se cierra modal');
+            setTimeout(function () {
+                $('.modal-backdrop').css("display", "none");
+
+                const truck_modal = document.querySelector('#container-modal-procesando');
+                const modal = bootstrap.Modal.getInstance(truck_modal);
+                modal.hide();
+                //closeModal('container-modal-procesando');
+            }, 500);
+               //$('.modal-backdrop').css("display", "none");
+               // closeModal('container-modal-procesando');
+
+
+         }
+     }
+
+     function toastMessage(type,message)
+     {
+         const Toast = Swal.mixin({
+             toast: true,
+             position: 'top-end',
+             showConfirmButton: false,
+             timer: 3000,
+             timerProgressBar: true,
+             didOpen: (toast) => {
+                 toast.addEventListener('mouseenter', Swal.stopTimer)
+                 toast.addEventListener('mouseleave', Swal.resumeTimer)
+             }});
+
+             Toast.fire({
+                 icon: type,
+                 title: message
+             });
+     }
+
+     function closeModal(modalName){
+         const truck_modal = document.querySelector('#'+modalName);
+         const modal = bootstrap.Modal.getInstance(truck_modal);
+         modal.hide();
+     }
+
+     function swaMessage(statusCode,message){
+         console.log(statusCode)
+         if (statusCode == 200) {
+             Swal.fire('¡Bien!!',message,'success');
+         } else if (statusCode == 400){
+             Swal.fire('¡Alerta!',message,'warning');
+         }else{
+             Swal.fire('¡Opps!',message,'error');
+         }
+     }
+
+     //**CONFIGURACIÓN TOASTR */
+     toastr.options = {
+        "closeButton": true,
+        "debug": false,
+        "newestOnTop": true,
+        "progressBar": true,
+        "positionClass": "toast-top-right",
+        "preventDuplicates": false,
+        "onclick": null,
+        "showDuration": "300",
+        "hideDuration": "1000",
+        "timeOut": "5000",
+        "extendedTimeOut": "1000",
+        "showEasing": "swing",
+        "hideEasing": "linear",
+        "showMethod": "fadeIn",
+        "hideMethod": "fadeOut"
+     };
+
+</script>

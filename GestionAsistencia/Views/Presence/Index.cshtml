@@ -1,0 +1,777 @@
+﻿@using Common.Utils.Enums
+@using Microsoft.AspNetCore.Identity
+@using static Common.Utils.Constant.Const
+
+@{
+    var idTypeUser = User.Claims.FirstOrDefault(x => x.Type == TypeClaims.IdTypeUser).Value;
+    bool isInstructor = idTypeUser == Convert.ToInt32(Enums.TypeUser.Instructor).ToString();
+}
+
+<input id="txtValorEstudiante" value=@isInstructor.ToString() hidden />
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h1>Asitencia</h1>
+        </div>
+    </div>
+    <hr />
+    <div class="row">
+        <form>
+            <div class="row">
+                <div class="col-md-9 form-group">
+                    @if (isInstructor)
+                    {
+                        @*todas las fichas en general*@
+                        <partial name="_AllFichasClass" />
+                    }
+                    else
+                    {
+                        @*todas las fichas de un usuario*@
+                        <partial name="_FichasClass" />
+                    }
+                    <partial name="_FechaInicioFechaFin" />
+                </div>
+                <div class="col-md-3 form-group p-5">
+                    <button type="button" class="btn btn-primary buttonTitle" onclick="obtenerAsistencias()">
+                        <i class="fas fa-search"></i>
+                        Buscar
+                    </button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+    <hr />
+
+    @if (isInstructor)
+    {
+        <div class="row">
+            <div class="col-md-12">
+                <button class="btn btn-primary buttonTitle" onclick="nuevaAsistencia()">
+                    <i class="fas fa-certificate"></i>
+                    Nueva Asistencia
+                </button>
+            </div>
+        </div>
+        <hr />
+    }
+
+</div>
+
+<div class="row m-3">
+    <div class="col-md-12">
+        <table id="tblAsistencia" class="table" style="width:100% !important">
+            <thead class="table-sena">
+                <tr>
+                    <th scope="col">Aprendiz</th>
+                    <th scope="col">Identificación</th>
+                    <th scope="col">Cantidad Inasistencias</th>
+                    <th scope="col">Opciones</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpoFiltro">
+            </tbody>
+
+        </table>
+    </div>
+</div>
+
+@if (isInstructor)
+{
+    <!-- Modal Asistencia-->
+    <div class="modal fade modal-xl" id="modalAsistencia" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel"> Crear Asistencia</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <partial name="_FichasClass" />
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label for="recipient-name" class="col-form-label">Fecha Asistencia</label>
+                                <input type="date"
+                                   class="form-control"
+                                   id="txtDateAsistencia"
+                                   placeholder="Fecha Asistencia">
+                            </div>
+                            <div class="col-md-6 btn-group p-4" role="group">
+
+                                <button type="button"
+                                    id="btnHabilitar"
+                                    class="btn btn-success buttonTitle"
+                                    disabled
+                                    onclick="habilitarFiltroAsistencia()">
+                                    <i class="fas fa-search"></i>
+                                    Habilitar Consulta
+                                </button>
+                                <button type="button"
+                                    id="btnConsultar"
+                                    class="btn btn-primary buttonTitle"
+                                    onclick="filtroAsistencia()">
+                                    <i class="fas fa-search"></i>
+                                    Consultar Aprendices
+                                </button>
+
+                            </div>
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="row">
+                        <table id="tblPresenceStudents" class="table" style="width:100% !important">
+                            <thead class="table-sena">
+                                <tr>
+                                    <th scope="col">Aprendiz</th>
+                                    <th scope="col">Identificación</th>
+                                    <th scope="col">SI</th>
+                                    <th scope="col">NO</th>
+                                    <th scope="col">NO CON EXCUSA</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cuerpoPresenceStudents" />
+
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-window-close"></i>
+                        Cancelar
+                    </button>
+                    <button id="btnSavePresence" type="button" class="btn btn-primary" disabled onclick="savePresence()">
+                        <i class="far fa-save"></i>
+                        Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal Asistencia  Detalle-->
+<div class="modal fade modal-lg" id="modalDetalleAsistencia" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="staticBackdropLabel"> Detalle Asistencia</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="row">
+                        <div class="col-md-12 form-group">
+                            <label for="recipient-name" class="col-form-label">Ficha</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="txtFichaAsistencia"
+                                   readonly>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label for="recipient-name" class="col-form-label">Nombre</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="txtFullName"
+                                   readonly>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="recipient-name" class="col-form-label">Identificacion</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="txtIdentificacion"
+                                   readonly>
+                        </div>
+                    </div>
+                </div>
+                <hr />
+                <div class="row">
+                    <table id="tblDetalleAsistencia" class="table" style="width:100% !important">
+                        <thead class="table-sena">
+                            <tr>
+                                <th scope="col">Fecha</th>
+                                <th scope="col">Clase</th>
+                                <th scope="col">NO</th>
+                                <th scope="col">NO CON EXCUSA</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpoDetalleAsistencia" />
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-window-close"></i>
+                    Cerrar
+                </button>
+              @*  <button id="btnSavePresence" type="button" class="btn btn-primary" disabled onclick="savePresence()">
+                    <i class="far fa-save"></i>
+                    Guardar
+                </button>*@
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts{
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+<script type="text/javascript" charset="utf-8">
+
+    var listStudents=[];
+    var listGroupPresence=[];
+    let isInstructor=false;
+
+    $(document).ready(function () {
+        //getAllExcusas();
+         
+       
+         let valor=$("#txtValorEstudiante").val();
+        if(valor=="True"){
+            isInstructor=true;
+            getAllFichasClass();
+            getFichasClassByUser();
+        }else{
+            getFichasClassByUser();
+        }
+
+        var myTooltipEl = document.getElementById('cmbFichas')
+        var tooltip = new bootstrap.Tooltip(myTooltipEl);
+
+        llenarGridDataTable('tblAsistencia');
+        llenarGridDataTable('tblPresenceStudents');
+        llenarGridDataTable('tblDetalleAsistencia');
+    });
+
+
+    function obtenerAsistencias(){
+          if(validarFormExcusas()){
+             let parametro={
+                 IdFicha:isInstructor?idAllFicha:idFicha,
+                 StartDate:$('#txtStartDate').val(),
+                 EndDate:$('#txtEndDate').val(),
+                 IdClass:0
+             };
+
+            if (isInstructor && idAllClass != ''){
+                parametro.IdClass=idAllClass;
+            }else{
+                parametro.IdClass=idClass;
+            }
+            console.log(parametro);
+
+            modalProcesando(true,'Cargando Asistencias');
+            $.ajax({
+                url: '@Url.Action("GetAllPresence", "Presence")',
+                method: 'GET',
+                dataType: "json",
+                data:parametro,
+                success: function (data) {
+                    modalProcesando(false);
+                    if (data.isSuccess) {
+                        listGroupPresence = data.result;
+                        console.log(listGroupPresence);
+                        loadGrid(listGroupPresence);
+                    } else {
+                        Swal.fire(
+                            'Opps!',
+                            data.message,
+                            'error');
+                    }
+                },
+                error: function (xhr, textStatus, errorThrown) {
+                    modalProcesando(false);
+                    console.error(xhr, textStatus, errorThrown);
+                }
+            });
+          }
+    }
+
+    function validarFormExcusas(){
+
+        if(isInstructor){
+            if (idAllFicha == ''){
+                $("#cmbAllFichas").focus();
+                toastMessage('warning', 'La ficha es obligatoria para realizar la busqueda.');
+
+                return false;
+            }
+        }else{
+              if (idFicha == ''){
+                $("#cmbFichas").focus();
+                toastMessage('warning', 'La ficha es obligatoria para realizar la busqueda.');
+
+                return false;
+            }
+        }
+
+        return validateDate();
+    }
+    function loadGrid(data) {
+        //llenar registro
+        if ($.fn.dataTable.isDataTable('#tblAsistencia')) {
+            var table = $('#tblAsistencia').DataTable();
+            table.destroy();
+            cargarGridAsistencias(data);
+            llenarGridDataTable('tblAsistencia');
+        }else{
+            cargarGridAsistencias(data);
+            llenarGridDataTable('tblAsistencia');
+        }
+    }
+
+    function cargarGridAsistencias(data) {
+        $("#cuerpoFiltro").html("");
+
+        for (var i = 0; i < data.length; i++) {
+            var tr = `
+                      <tr>
+                         <th>`+ data[i].fullName + `</th>
+                         <th>`+ data[i].identification + `</th>
+                         <th> `+ data[i].count + `</th>
+
+                     <td>
+                                <button  class="btn btn-info" onclick="detailPresence(`+ data[i].idUser + `)"><i class="fas fa-info"></i> Detalle</button>
+                      </td>
+                     </tr>
+                      `;
+            $("#cuerpoFiltro").append(tr);
+        }
+    }
+
+    // ** CREAR ASISTENCIAS **
+    function nuevaAsistencia() {
+        var fecha = new Date(); //Fecha actual
+        var mes = fecha.getMonth() + 1; //obteniendo mes
+        var dia = fecha.getDate(); //obteniendo dia
+        var ano = fecha.getFullYear(); //obteniendo año
+        if (dia < 10)
+            dia = '0' + dia; //agrega cero si el menor de 10
+        if (mes < 10)
+            mes = '0' + mes; //agrega cero si el menor de 10
+        document.getElementById('txtDateAsistencia').value = ano + "-" + mes + "-" + dia;
+
+
+        limpiarFormFichaClase();
+        $("#btnSavePresence").prop('disabled',true);
+        $("#cuerpoPresenceStudents").html("");
+
+
+        const modal = new bootstrap.Modal('#modalAsistencia', {
+            keyboard: true
+        });
+        modal.show();
+    }
+
+    function filtroAsistencia(){
+        if(validarFormAsistencia()){
+           let parametro={
+               IdFicha:idFicha,
+               IdClass:idClass,
+               StartDate:$('#txtDateAsistencia').val()
+           };
+           modalProcesando(true,'Cargando Aprendices');
+           $.ajax({
+               url: '@Url.Action("ConsultStudentsPresence", "Presence")',
+               method: 'GET',
+               dataType: "json",
+               data:parametro,
+               success: function (data) {
+                   modalProcesando(false);
+                   if (data.isSuccess) {
+                       listStudents=data.result;
+                       console.log(listStudents);
+                       loadGridStudents(listStudents);
+
+                       //bloquear
+                       $("#btnSavePresence").prop('disabled',false);
+                       $('#cmbFichas').prop('disabled',true);
+                       $('#cmbClass').prop('disabled',true);
+                       $("#btnHabilitar").prop('disabled',false);
+                       $("#btnConsultar").prop('disabled',true);
+                       $("#txtDateAsistencia").prop('disabled',true);
+                   } else {
+                       swaMessage(400,data.message);
+                   }
+               },
+               error: function (xhr, textStatus, errorThrown) {
+                   modalProcesando(false);
+                   //toastMessage('error', 'Hubo un error al guardar, por favor intentarlo nuevamente!');
+                   console.error(xhr, textStatus, errorThrown);
+                   swaMessage(xhr.status,xhr.responseJSON.message);
+               }
+           });
+        }
+    }
+
+    function validarFormAsistencia(){
+        if(validarFichaClase()){
+            let fecha=$('#txtDateAsistencia').val();
+            if (fecha == '') {
+                $("#txtDateAsistencia").focus();
+                toastMessage('warning', 'La Fecha Asistencia es obligatoria.');
+                return false;
+            }
+            return true;
+        }
+    }
+
+    function loadGridStudents(data) {
+        //llenar registro
+        if ($.fn.dataTable.isDataTable('#tblPresenceStudents')) {
+            var table = $('#tblPresenceStudents').DataTable();
+            table.destroy();
+            cargarGridPresenceStudents(data);
+            llenarGridDataTable('tblPresenceStudents');
+        }else{
+            cargarGridPresenceStudents(data);
+            llenarGridDataTable('tblPresenceStudents');
+        }
+    }
+
+    function cargarGridPresenceStudents(data) {
+        $("#cuerpoPresenceStudents").html("");
+
+        for (var i = 0; i < data.length; i++) {
+            if(data[i].excuse){
+                var tr = `
+                        <tr>
+                                <th scope="col">`+ data[i].fullName + `</th>
+                                <th>`+ data[i].identification + `</th>
+                                <th scope="col">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="radioPresence`+ data[i].idUser + `" id="radioPresence`+ data[i].idUser + `" onchange="selectPresence(`+ data[i].idUser + `)">
+                                        <label class="form-check-label" for="radioPresence`+ data[i].idUser + `">
+
+                                        </label>
+                                    </div>
+                                </th>
+                                <th scope="col">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="radioPresence`+ data[i].idUser + `" id="radioPresence`+ data[i].idUser + `" onchange="selectNoExcuse(`+ data[i].idUser + `)">
+                                        <label class="form-check-label" for="radioPresence`+ data[i].idUser + `">
+                                            Sin Excusa
+                                        </label>
+                                    </div>
+                                </th>
+                                <th scope="col">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" checked name="radioPresence`+ data[i].idUser + `" id="radioPresence`+ data[i].idUser + `" onchange="selectExcuse(`+ data[i].idUser + `)">
+                                        <label class="form-check-label" for="radioPresence`+ data[i].idUser + `">
+                                            Con Excusa
+                                        </label>
+                                    </div>
+                                </th>
+                            </tr>
+                            `;
+                $("#cuerpoPresenceStudents").append(tr);
+            }else if(data[i].noExcuse) {
+                var tr = `
+                        <tr>
+                                <th scope="col">`+ data[i].fullName + `</th>
+                                <th>`+ data[i].identification + `</th>
+
+                                <th scope="col">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="radioPresence`+ data[i].idUser + `" id="radioPresence`+ data[i].idUser + `" onchange="selectPresence(`+ data[i].idUser + `)">
+                                        <label class="form-check-label" for="radioPresence`+ data[i].idUser + `">
+
+                                        </label>
+                                    </div>
+                                </th>
+
+                                <th scope="col">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" checked name="radioPresence`+ data[i].idUser + `" id="radioPresence`+ data[i].idUser + `" onchange="selectNoExcuse(`+ data[i].idUser + `)">
+                                        <label class="form-check-label" for="radioPresence`+ data[i].idUser + `">
+                                            Sin Excusa
+                                        </label>
+                                    </div>
+                                 </th>
+                                <th scope="col">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="radioPresence`+ data[i].idUser + `" id="radioPresence`+ data[i].idUser + `" onchange="selectExcuse(`+ data[i].idUser + `)">
+                                        <label class="form-check-label" for="radioPresence`+ data[i].idUser + `">
+                                            Con Excusa
+                                        </label>
+                                    </div>
+                                </th>
+                            </tr>
+                            `;
+                $("#cuerpoPresenceStudents").append(tr);
+            }else {
+                var tr = `
+                        <tr>
+                                <th scope="col">`+ data[i].fullName + `</th>
+                                <th>`+ data[i].identification + `</th>
+
+                                <th scope="col">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" checked name="radioPresence`+ data[i].idUser + `" id="radioPresence`+ data[i].idUser + `" onchange="selectPresence(`+ data[i].idUser + `)">
+                                        <label class="form-check-label" for="radioPresence`+ data[i].idUser + `">
+
+                                        </label>
+                                    </div>
+                                </th>
+
+                                <th scope="col">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="radioPresence`+ data[i].idUser + `" id="radioPresence`+ data[i].idUser + `" onchange="selectNoExcuse(`+ data[i].idUser + `)">
+                                        <label class="form-check-label" for="radioPresence`+ data[i].idUser + `">
+                                            Sin Excusa
+                                        </label>
+                                    </div>
+                                 </th>
+                                <th scope="col">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="radioPresence`+ data[i].idUser + `" id="radioPresence`+ data[i].idUser + `" onchange="selectExcuse(`+ data[i].idUser + `)">
+                                        <label class="form-check-label" for="radioPresence`+ data[i].idUser + `">
+                                            Con Excusa
+                                        </label>
+                                    </div>
+                                </th>
+                            </tr>
+                            `;
+                $("#cuerpoPresenceStudents").append(tr);
+            }
+        }
+    }
+
+    function selectExcuse(idUser){
+        //console.log('con excusa',idUser);
+        let student=listStudents.find(x=>x.idUser==idUser);
+        listStudents=listStudents.filter(x=>x.idUser!=idUser);
+        student.noExcuse=false;
+        student.excuse=true;
+        listStudents.push(student);
+    }
+
+    function selectNoExcuse(idUser){
+        //console.log('sin excusa',idUser);
+        let student=listStudents.find(x=>x.idUser==idUser);
+        listStudents=listStudents.filter(x=>x.idUser!=idUser);
+        student.noExcuse=true;
+        student.excuse=false;
+        listStudents.push(student);
+    }
+
+    function selectPresence(idUser){
+        //console.log('si vino',idUser);
+        let student=listStudents.find(x=>x.idUser==idUser);
+        listStudents=listStudents.filter(x=>x.idUser!=idUser);
+        student.noExcuse=false;
+        student.excuse=false;
+        listStudents.push(student);
+    }
+
+    function habilitarFiltroAsistencia(){
+         Swal.fire({
+                title: '¿Confirma Habilitar Consulta?',
+                text: "Asegurese de guardar la asistencia, de lo contrario, perderá el avance.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#0d6123',
+                cancelButtonColor: '#d33',
+                cancelButtonText: 'Cancelar',
+                confirmButtonText: 'Si, Habilitar!',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $("#btnSavePresence").prop('disabled',true);
+                    $('#cmbFichas').prop('disabled',false);
+                    $('#cmbClass').prop('disabled',false);
+                    $("#btnHabilitar").prop('disabled',true);
+                    $("#btnConsultar").prop('disabled',false);
+                    $("#txtDateAsistencia").prop('disabled',false);
+                }
+            });
+    }
+
+    function savePresence(){
+        if(listStudents.length==0){
+            swaMessage(400,'No hay Aprendices seleccionados.');
+        }else{
+            modalProcesando(true,'Guardando Asistencia');
+            $.ajax({
+                url: '@Url.Action("InsertPresence", "Presence")',
+                method: 'POST',
+                dataType: "json",
+                data:{
+                    list:listStudents
+                },
+                success: function (data) {
+                    modalProcesando(false);
+                    console.log(data);
+                    if (data.isSuccess) {
+                        closeModal('modalAsistencia');
+
+                        //asigno valores al front principal para consultar por los datos actuales
+                        idAllFicha=idFicha;
+                        idAllClass=idClass;
+                        loadAllFichas(listAllFichas,idAllFicha);
+                        console.log(listAllClass);
+                        loadAllClass(listAllClass,idAllClass);
+                        $("#txtStartDate").val($("#txtDateAsistencia").val());
+                        $("#txtEndDate").val($("#txtDateAsistencia").val());
+                        obtenerAsistencias();
+
+                        //Notificar a los que tengan más de 3 inasistencias
+                        notificationPresence(data);
+                    } else {
+                        swaMessage(400,data.message);
+                    }
+                },
+                error: function (xhr, textStatus, errorThrown) {
+                    modalProcesando(false);
+                    //toastMessage('error', 'Hubo un error al guardar, por favor intentarlo nuevamente!');
+                    console.error(xhr, textStatus, errorThrown);
+                    swaMessage(xhr.status,xhr.responseJSON.message);
+                }
+            });
+        }
+    }
+
+
+    function notificationPresence(data){
+        var notifications=data.result;
+
+        $.each(notifications, function (i, lista) {
+           toastr["info"](notifications[i].description, notifications[i].title);
+           updateNotificationCount();
+        });
+    }
+
+    //** DETALLE ASISTENCIAS */
+
+    function detailPresence(idUser){
+        let parametro={
+            IdFicha:isInstructor?idAllFicha:idFicha,
+            StartDate:$('#txtStartDate').val(),
+            EndDate:$('#txtEndDate').val(),
+            IdClass:0,
+            IdUser:idUser
+        };
+
+        if (isInstructor && idAllClass != ''){
+            parametro.IdClass=idAllClass;
+        }else{
+            parametro.IdClass=idClass;
+        }
+
+        modalProcesando(true,'Consultando Detalle');
+        $.ajax({
+            url: '@Url.Action("GetDetailPresence", "Presence")',
+            method: 'GET',
+            dataType: "json",
+            data:parametro,
+            success: function (data) {
+                modalProcesando(false);
+                if (data.isSuccess) {
+                    //closeModal('modalAsistencia');
+                    abrirModalDetalle(data.result,idUser);
+                } else {
+                    swaMessage(400,data.message);
+                }
+            },
+            error: function (xhr, textStatus, errorThrown) {
+                modalProcesando(false);
+                //toastMessage('error', 'Hubo un error al guardar, por favor intentarlo nuevamente!');
+                console.error(xhr, textStatus, errorThrown);
+                swaMessage(xhr.status,xhr.responseJSON.message);
+            }
+        });
+    }
+
+    function abrirModalDetalle(listaDetalle,idUser){
+        console.log(listaDetalle);
+
+        let detail=listaDetalle.find(x=>x.idUser=idUser);
+        $('#txtFichaAsistencia').val(detail.ficha);
+        $('#txtFullName').val(detail.fullName);
+        $('#txtIdentificacion').val(detail.identification);
+        console.log(detail);
+        loadGridDetailStudents(listaDetalle);
+        const modal = new bootstrap.Modal('#modalDetalleAsistencia', {
+            keyboard: true
+        });
+        modal.show();
+    }
+
+    function loadGridDetailStudents(data) {
+        //llenar registro
+        if ($.fn.dataTable.isDataTable('#tblDetalleAsistencia')) {
+            var table = $('#tblDetalleAsistencia').DataTable();
+            table.destroy();
+            cargarGridDetailPresence(data);
+            llenarGridDataTable('tblDetalleAsistencia');
+        }else{
+            cargarGridDetailPresence(data);
+            llenarGridDataTable('tblDetalleAsistencia');
+        }
+    }
+
+    function cargarGridDetailPresence(data) {
+        $("#cuerpoDetalleAsistencia").html("");
+
+        for (var i = 0; i < data.length; i++) {
+            if(data[i].excuse){
+                var tr = `
+                        <tr>
+                                <th scope="col">`+ data[i].strDate + `</th>
+                                <th>`+ data[i].strClass + `</th>
+                                <th scope="col">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" disabled name="radioPresence`+ i + `" id="radioPresence`+ i + `" >
+                                        <label class="form-check-label" for="radioPresence`+ i + `">
+                                            Sin Excusa
+                                        </label>
+                                    </div>
+                                </th>
+                                <th scope="col">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" disabled checked name="radioPresence`+ i + `" id="radioPresence`+ i + `">
+                                        <label class="form-check-label" for="radioPresence`+ i + `">
+                                            Con Excusa
+                                        </label>
+                                    </div>
+                                </th>
+                            </tr>
+                            `;
+                $("#cuerpoDetalleAsistencia").append(tr);
+            }else {
+                var tr = `
+                        <tr>
+                                <th scope="col">`+ data[i].strDate + `</th>
+                                <th>`+ data[i].strClass + `</th>
+
+                                 <th scope="col">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" disabled checked name="radioPresence`+ i + `" id="radioPresence`+ i + `" >
+                                        <label class="form-check-label" for="radioPresence`+i + `">
+                                            Sin Excusa
+                                        </label>
+                                    </div>
+                                </th>
+                                <th scope="col">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" disabled name="radioPresence`+ i + `" id="radioPresence`+ i + `">
+                                        <label class="form-check-label" for="radioPresence`+ i+ `">
+                                            Con Excusa
+                                        </label>
+                                    </div>
+                                </th>
+                            </tr>
+                            `;
+                $("#cuerpoDetalleAsistencia").append(tr);
+            }
+        }
+    }
+</script>
+
+    }
+
+

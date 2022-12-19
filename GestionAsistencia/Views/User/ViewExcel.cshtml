@@ -1,0 +1,347 @@
+﻿@using GA.Domain.DTO.User;
+
+@model GA.Domain.DTO.User.UserViewExcelDto
+@{
+    //var idFicha = Model.IdFicha;
+}
+
+<h1>Inserción Masiva de Aprendices</h1>
+
+<input name="idFicha" value=@Model.IdFicha type="text" id="txtIdFicha" hidden />
+
+<div class="card">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Cargar Excel</h5>
+            </div>
+            <div class="col-md-6">
+                <button class="btn btn-outline-warning float-end" onclick="descargarModelo('@Model.RutaDescarga')"> <i class="fas fa-download"></i> Descargar Modelo</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="card-body">
+        <div class="row">
+            <div class="col-sm-4">
+                <input class="form-control-file" type="file" id="FileExcelStudents" accept=".xlsx" />
+            </div>
+            <div class="col-sm-4">
+                <button class="btn btn-warning" onclick="mostrarDatos()">Mostrar Datos</button>
+                <button id="btnEnviarData" class="btn btn-success" disabled onclick="enviarDatos()">Enviar Datos a BD</button>
+            </div>
+
+
+        </div>
+        <hr />
+
+
+        <div class="row">
+            <div class="col-md-12">
+                <table class="table table-striped" id="tbData" style="width:100% !important">
+                    <thead class="table-sena">
+                        <tr>
+                            <th scope="col">Nombre</th>
+                            <th scope="col">Apellido</th>
+                            <th scope="col">Identificacion</th>
+                            <th scope="col">Correo</th>
+                            <th scope="col">Telefono</th>
+                            <th scope="col">Opciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpoGridStudents">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
+    </div>
+</div>
+
+
+
+@*modla Nuevo Usuario*@
+<div class="modal fade" id="modalUsersAprendiz" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="1" role="dialog" aria-labelledby="modalUsersLabel" aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="idTituloModalUsersAprendiz">Editar Aprendiz antes de insertar</h5>
+            </div>
+            <div class="modal-body">
+                <form>
+
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label for="recipient-name" class="col-form-label">Nombre</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="txtName"
+                                   placeholder="Nombre"
+                                   required
+                                   maxlength="30">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="recipient-name" class="col-form-label">Apellido</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="txtLastName"
+                                   placeholder="Apellido"
+                                   required
+                                   maxlength="30">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label for="recipient-name" class="col-form-label">Identificación</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="txtIdentification"
+                                   placeholder="Identificación"
+                                   required
+                                   maxlength="10">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="recipient-name" class="col-form-label">Teléfono Celular</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="txtTelefono"
+                                   placeholder="Teléfono"
+                                   maxlength="10">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label for="recipient-name" class="col-form-label">Correo electrónico</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="txtEmail"
+                                   placeholder="Correo electrónico"
+                                   required
+                                   maxlength="50">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                    <i class="fas fa-window-close"></i>
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-success" onclick="guardarAprendiz()">
+                    <i class="far fa-save"></i>
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts{
+
+<script type="text/javascript" charset="utf-8">
+
+        var listStudents=[];
+        let userSelect='';
+        let idFicha = $("#txtIdFicha").val();
+        $(document).ready(function () {
+            console.log("vista de inserciones");
+            llenarGridDataTable('tbData');
+        });
+
+        function mostrarDatos() {
+            var formData = new FormData();
+            var myfile= document.getElementById("FileExcelStudents");
+            if (myfile.files.length > 0) {
+                var files = $("#FileExcelStudents")[0].files;
+                formData.append("archivoExcel", files[0]);
+            }else{
+                $("#FileExcelStudents").focus();
+                toastMessage('warning','El archivo excel con los nuevos registros es obligatorio');
+                return;
+            }
+
+
+            $.ajax({
+                 url: '@Url.Action("MostrarDatos", "User")',
+                 method: 'POST',
+                 data:formData,
+                 dataType: "json",
+                 contentType: false,
+                 processData: false,
+                 success: function (data) {
+                     modalProcesando(false);
+
+                     if (data.isSuccess) {
+                         listStudents=data.result;
+                         loadGrid(listStudents);
+                         $('#btnEnviarData').prop('disabled',false);
+                     } else {
+                         toastMessage('warning', data.message);
+                     }
+                 },
+                 error: function (xhr, textStatus, errorThrown) {
+                     modalProcesando(false);
+                     //toastMessage('error', 'Hubo un error al guardar, por favor intentarlo nuevamente!');
+                     console.error(xhr, textStatus, errorThrown);
+                     if (xhr.status == 400) {
+                         Swal.fire(
+                             'Alerta!',
+                             xhr.responseJSON.message,
+                             'warning');
+                     } else {
+                         Swal.fire(
+                             'Opps!',
+                             xhr.responseJSON.message,
+                             'error');
+                     }
+                 }
+            });
+         }
+
+        function enviarDatos() {
+            console.log(listStudents);
+
+            modalProcesando(true, 'Enviando Datos a la Base de Datos');
+            $.ajax({
+                url: '@Url.Action("EnviarDatos", "User")',
+                method: 'POST',
+                data:{
+                listStudents: listStudents,
+                idFicha: idFicha
+                },
+                dataType: "json",
+                success: function (data) {
+                    modalProcesando(false);
+                    if (data.isSuccess) {
+                        toastMessage('success', data.message);
+
+                        listStudents=[];
+                        loadGrid(listStudents);
+                        $('#FileExcelStudents').val('');
+                    } else {
+                        toastMessage('warning', data.message);
+                    }
+                },
+                error: function (xhr, textStatus, errorThrown) {
+                    modalProcesando(false);
+                    console.error(xhr, textStatus, errorThrown);
+                    if (xhr.status == 400) {
+                        Swal.fire(
+                            'Alerta!',
+                            xhr.responseJSON.message,
+                            'warning');
+                    } else {
+                        Swal.fire(
+                            'Opps!',
+                            xhr.responseJSON.message,
+                            'error');
+                    }
+                }
+            });
+        }
+
+        function loadGrid(data) {
+            //llenar registro
+            if ($.fn.dataTable.isDataTable('#tbData')) {
+                var table = $('#tbData').DataTable();
+                table.destroy();
+                cargarGridStudents(data);
+                llenarGridDataTable('tbData');
+            }else {
+                cargarGridStudents(data);
+                llenarGridDataTable('tbData');
+            }
+        }
+
+        function cargarGridStudents(data) {
+            console.log(data);
+             $("#cuerpoGridStudents").html("");
+
+             for (var i = 0; i < data.length; i++) {
+                 console.log(i);
+                 var tr = `
+                             <tr>
+                                 <th>`+ data[i].nombre + `</th>
+                                 <th>`+ data[i].apellido + `</th>
+                                 <th>`+ data[i].identificacion + `</th>
+                                 <th>`+ data[i].email + `</th>
+                                 <th>`+ data[i].telefono + `</th>
+                                 <td>
+                                     <button  class="btn btn-warning" onclick="editarAprendiz(`+ data[i].identificacion + `)"><i class="fas fa-edit"></i> Editar</button>
+                                     <button class="btn btn-danger" onclick="eliminarAprendiz(`+ data[i].identificacion + `)"><i class="fas fa-trash-alt"></i> Eliminar</button>
+                                 </td>
+                             </tr>
+                             `;
+                 $("#cuerpoGridStudents").append(tr);
+             }
+             }
+
+             function editarAprendiz(id){
+                 console.log(id);
+                 //Find se usa cuando es un solo registro
+                 userSelect=listStudents.find(x=>x.identificacion==id);
+                 console.log(userSelect);
+                 //Filter se usa cuando es una lista
+                 //listStudents=listStudents.filter(x=>x.identificacion!=id);
+                 //console.log(listStudents);
+                 //select data
+                 $("#txtLastName").val(userSelect.nombre);
+                 $("#txtName").val(userSelect.apellido);
+                 $("#txtIdentification").val(userSelect.identificacion);
+                 $("#txtTelefono").val(userSelect.telefono);
+                 $("#txtEmail").val(userSelect.email);
+
+                 const modal = new bootstrap.Modal('#modalUsersAprendiz', {
+                     //$("#idTituloModalUsersAprendiz").html('Editar Aprendiz');
+                     keyboard: true
+                 });
+                 modal.show();
+                 ////data actualziada
+                 //userSelect.identificacion='1040376452';
+                 //listStudents.push(userSelect);
+                 //console.log(listStudents);
+                 //loadGrid(listStudents);
+             }
+             function guardarAprendiz() {
+                 let identificacion = userSelect.identificacion;
+                 listStudents = listStudents.filter(x => x.identificacion != identificacion);
+                 userSelect.identificacion = $("#txtIdentification").val();
+                 userSelect.nombre = $("#txtName").val();
+                 userSelect.apellido = $("#txtLastName").val();
+                 userSelect.telefono = $("#txtTelefono").val();
+                 userSelect.email = $("#txtEmail").val();
+                 listStudents.push(userSelect);
+                 //console.log(userSelect);
+                 //console.log(listStudents);
+                 loadGrid(listStudents);
+                 closeModal('modalUsersAprendiz');
+             }
+             function eliminarAprendiz(id){
+                  Swal.fire({
+                     title: '¿Confirmar Eliminacion?',
+                     text: "No podrás revertir esto!",
+                     icon: 'warning',
+                     showCancelButton: true,
+                     confirmButtonColor: '#3085d6',
+                     cancelButtonColor: '#d33',
+                     cancelButtonText: 'Cancelar',
+                     confirmButtonText: 'Si, Eliminar!',
+                 }).then((result) => {
+                     if (result.isConfirmed) {
+                         listStudents=listStudents.filter(x=>x.identificacion!=id);
+                         loadGrid(listStudents);
+                     }
+                 });
+             }
+
+    function descargarModelo(ruta){
+        console.log(ruta);
+         window.location.href = "@Url.RouteUrl(new
+                                           { Controller = "Excuse", Action = "Download" })/?fileName="+ruta;
+    }
+
+</script>
+
+   }
